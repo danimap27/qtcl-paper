@@ -1,0 +1,72 @@
+\begin{thebibliography}{9}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Havl{\'\i}{\v{c}}ek et~al.(2019)Havl{\'\i}{\v{c}}ek, C{\'o}rcoles,
+  Temme, Harrow, Kandala, Chow, and Gambetta]{havlicek2019}
+Vojt{\v{e}}ch Havl{\'\i}{\v{c}}ek, Antonio~D C{\'o}rcoles, Kristan Temme,
+  Aram~W Harrow, Abhinav Kandala, Jerry~M Chow, and Jay~M Gambetta.
+\newblock Supervised learning with quantum-enhanced feature spaces.
+\newblock \emph{Nature}, 567\penalty0 (7747):\penalty0 209--212, 2019.
+
+\bibitem[McCloskey and Cohen(1989)]{mccloskey1989}
+Michael McCloskey and Neal~J Cohen.
+\newblock Catastrophic interference in connectionist networks: The sequential
+  learning problem.
+\newblock \emph{Psychology of learning and motivation}, 24:\penalty0 109--165,
+  1989.
+
+\bibitem[Biamonte et~al.(2017)Biamonte, Wittek, Pancotti, Rebentrost, Wiebe,
+  and Lloyd]{biamonte2017}
+Jacob Biamonte, Peter Wittek, Nicola Pancotti, Patrick Rebentrost, Nathan
+  Wiebe, and Seth Lloyd.
+\newblock Quantum machine learning.
+\newblock \emph{Nature}, 549\penalty0 (7671):\penalty0 195--202, 2017.
+
+\bibitem[Schuld and Killoran(2019)]{schuld2019}
+Maria Schuld and Nathan Killoran.
+\newblock Quantum machine learning in feature {Hilbert} spaces.
+\newblock \emph{Physical Review Letters}, 122\penalty0 (4):\penalty0 040504,
+  2019.
+
+\bibitem[Lopez-Paz and Ranzato(2017)]{lopez2017gradient}
+David Lopez-Paz and Marc'Aurelio Ranzato.
+\newblock Gradient episodic memory for continual learning.
+\newblock \emph{Advances in Neural Information Processing Systems}, 30, 2017.
+
+\bibitem[Pedregosa et~al.(2011)Pedregosa, Varoquaux, Gramfort, Michel, Thirion,
+  Grisel, Blondel, Prettenhofer, Weiss, Dubourg, et~al.]{scikit-learn}
+Fabian Pedregosa, Ga{\"e}l Varoquaux, Alexandre Gramfort, Vincent Michel,
+  Bertrand Thirion, Olivier Grisel, Mathieu Blondel, Peter Prettenhofer, Ron
+  Weiss, Vincent Dubourg, et~al.
+\newblock Scikit-learn: Machine learning in {Python}.
+\newblock \emph{Journal of Machine Learning Research}, 12:\penalty0 2825--2830,
+  2011.
+
+\bibitem[Parisi et~al.(2019)Parisi, Kemker, Part, Kanan, and
+  Wermter]{parisi2019continual}
+German~I Parisi, Ronald Kemker, Jose~L Part, Christopher Kanan, and Stefan
+  Wermter.
+\newblock Continual lifelong learning with neural networks: A review.
+\newblock \emph{Neural Networks}, 113:\penalty0 54--71, 2019.
+
+\bibitem[Kirkpatrick et~al.(2017)Kirkpatrick, Pascanu, Rabinowitz, Veness,
+  Desjardins, Rusu, Milan, Quan, Ramalho, Grabska-Barwinska,
+  et~al.]{kirkpatrick2017overcoming}
+James Kirkpatrick, Razvan Pascanu, Neil Rabinowitz, Joel Veness, Guillaume
+  Desjardins, Andrei~A Rusu, Kieran Milan, John Quan, Tiago Ramalho, Agnieszka
+  Grabska-Barwinska, et~al.
+\newblock Overcoming catastrophic forgetting in neural networks.
+\newblock \emph{Proceedings of the National Academy of Sciences}, 114\penalty0
+  (13):\penalty0 3521--3526, 2017.
+
+\bibitem[Mari et~al.(2020)Mari, Bromley, Izaac, Schuld, and
+  Killoran]{mari2020transfer}
+Andrea Mari, Thomas~R Bromley, Josh Izaac, Maria Schuld, and Nathan Killoran.
+\newblock Transfer learning in hybrid classical-quantum neural networks.
+\newblock \emph{Quantum}, 4:\penalty0 340, 2020.
+
+\end{thebibliography}
