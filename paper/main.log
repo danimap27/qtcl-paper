@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.3.22)  23 MAR 2026 06:12
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.3.22)  23 MAR 2026 07:05
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -589,71 +589,83 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `cmtt' (encoding: OT1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-
-Underfull \vbox (badness 6032) has occurred while \output is active []
-
  [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 
 ]
-Underfull \hbox (badness 3492) in paragraph at lines 118--118
-[]\OT1/cmr/bx/n/14.4 (+20) Quantum Trans-fer Con-tin-ual
+Underfull \hbox (badness 4156) in paragraph at lines 113--113
+[]\OT1/cmr/bx/n/12 (+20) Classical Back-bone for Quan-tum
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 122--126
-\OT1/cmr/m/n/10 (+20) Given a se-quence of bi-nary clas-si-fi-ca-tion tasks
- []
-
+<../figures/backbone_pipeline.pdf, id=130, 851.7742pt x 201.09705pt>
+File: ../figures/backbone_pipeline.pdf Graphic file (type pdf)
+<use ../figures/backbone_pipeline.pdf>
+Package pdftex.def Info: ../figures/backbone_pipeline.pdf  used on input line 1
+50.
+(pdftex.def)             Requested size: 250.93245pt x 59.24332pt.
 Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
 put line 166.
-<../figures/circuit_diagram.pdf, id=129, 1380.46698pt x 433.9658pt>
-File: ../figures/circuit_diagram.pdf Graphic file (type pdf)
-<use ../figures/circuit_diagram.pdf>
-Package pdftex.def Info: ../figures/circuit_diagram.pdf  used on input line 204
-.
-(pdftex.def)             Requested size: 250.93245pt x 78.87859pt.
-<../figures/task_datasets.pdf, id=132, 1285.45062pt x 282.99829pt>
-File: ../figures/task_datasets.pdf Graphic file (type pdf)
-<use ../figures/task_datasets.pdf>
-Package pdftex.def Info: ../figures/task_datasets.pdf  used on input line 225.
-(pdftex.def)             Requested size: 250.93245pt x 55.24274pt.
-[2 <../figures/circuit_diagram.pdf>]
-Underfull \hbox (badness 1072) in paragraph at lines 239--240
-[]\OT1/cmr/bx/n/10 (+20) QTCL (pro-posed)\OT1/cmr/m/n/10 (+20) : full QTCL with
- trans-fer,
+
+Underfull \hbox (badness 1092) in paragraph at lines 187--195
+\OT1/cmr/m/n/10 (+20) Quan-tum Run-time. Set-ting \OT1/cmtt/m/n/10 IBM[]QUANTUM
+=true \OT1/cmr/m/n/10 (+20) and
  []
 
-<../figures/accuracy_matrix.pdf, id=232, 1780.98872pt x 331.41917pt>
-File: ../figures/accuracy_matrix.pdf Graphic file (type pdf)
-<use ../figures/accuracy_matrix.pdf>
-Package pdftex.def Info: ../figures/accuracy_matrix.pdf  used on input line 263
+<../figures/circuit_diagram.pdf, id=132, 1380.46698pt x 433.9658pt>
+File: ../figures/circuit_diagram.pdf Graphic file (type pdf)
+<use ../figures/circuit_diagram.pdf>
+Package pdftex.def Info: ../figures/circuit_diagram.pdf  used on input line 198
 .
-(pdftex.def)             Requested size: 250.93245pt x 46.69167pt.
-<../figures/cl_metrics.pdf, id=235, 1140.77205pt x 317.8215pt>
+(pdftex.def)             Requested size: 250.93245pt x 78.87859pt.
+<../figures/task_datasets.pdf, id=135, 1285.27002pt x 282.89102pt>
+File: ../figures/task_datasets.pdf Graphic file (type pdf)
+<use ../figures/task_datasets.pdf>
+Package pdftex.def Info: ../figures/task_datasets.pdf  used on input line 217.
+(pdftex.def)             Requested size: 250.93245pt x 55.23042pt.
+[2{/usr/share/texmf/fonts/enc/dvips/cm-super/cm-super-ts1.enc} <../figures/back
+bone_pipeline.pdf> <../figures/circuit_diagram.pdf>]
+<../figures/backbone_comparison.pdf, id=313, 1140.77205pt x 353.22127pt>
+File: ../figures/backbone_comparison.pdf Graphic file (type pdf)
+<use ../figures/backbone_comparison.pdf>
+Package pdftex.def Info: ../figures/backbone_comparison.pdf  used on input line
+ 264.
+(pdftex.def)             Requested size: 250.93245pt x 77.69275pt.
+
+Overfull \hbox (4.94102pt too wide) in paragraph at lines 286--300
+ [][] 
+ []
+
+<../figures/cl_metrics.pdf, id=316, 1285.31204pt x 352.98415pt>
 File: ../figures/cl_metrics.pdf Graphic file (type pdf)
 <use ../figures/cl_metrics.pdf>
-Package pdftex.def Info: ../figures/cl_metrics.pdf  used on input line 307.
-(pdftex.def)             Requested size: 250.93245pt x 69.90639pt.
-<../figures/acc_evolution.pdf, id=237, 1429.95926pt x 282.99829pt>
+Package pdftex.def Info: ../figures/cl_metrics.pdf  used on input line 304.
+(pdftex.def)             Requested size: 250.93245pt x 68.90973pt.
+<../figures/accuracy_matrix.pdf, id=319, 2142.08803pt x 331.41917pt>
+File: ../figures/accuracy_matrix.pdf Graphic file (type pdf)
+<use ../figures/accuracy_matrix.pdf>
+Package pdftex.def Info: ../figures/accuracy_matrix.pdf  used on input line 320
+.
+(pdftex.def)             Requested size: 250.93245pt x 38.8229pt.
+<../figures/acc_evolution.pdf, id=320, 1429.95926pt x 282.99829pt>
 File: ../figures/acc_evolution.pdf Graphic file (type pdf)
 <use ../figures/acc_evolution.pdf>
-Package pdftex.def Info: ../figures/acc_evolution.pdf  used on input line 324.
+Package pdftex.def Info: ../figures/acc_evolution.pdf  used on input line 329.
 (pdftex.def)             Requested size: 250.93245pt x 49.6593pt.
-<../figures/forgetting.pdf, id=239, 706.74237pt x 309.72285pt>
-File: ../figures/forgetting.pdf Graphic file (type pdf)
-<use ../figures/forgetting.pdf>
-Package pdftex.def Info: ../figures/forgetting.pdf  used on input line 340.
-(pdftex.def)             Requested size: 250.93245pt x 109.9689pt.
-<../figures/radar.pdf, id=241, 453.47562pt x 373.12247pt>
-File: ../figures/radar.pdf Graphic file (type pdf)
-<use ../figures/radar.pdf>
-Package pdftex.def Info: ../figures/radar.pdf  used on input line 355.
-(pdftex.def)             Requested size: 213.29411pt x 175.49852pt.
-[3{/usr/share/texmf/fonts/enc/dvips/cm-super/cm-super-ts1.enc} <../figures/task
-_datasets.pdf> <../figures/accuracy_matrix.pdf> <../figures/cl_metrics.pdf>]
-(./main.bbl [4 <../figures/acc_evolution.pdf> <../figures/forgetting.pdf> <../f
-igures/radar.pdf>]) [5
+<../figures/kernel_analysis.pdf, id=322, 819.1908pt x 353.82289pt>
+File: ../figures/kernel_analysis.pdf Graphic file (type pdf)
+<use ../figures/kernel_analysis.pdf>
+Package pdftex.def Info: ../figures/kernel_analysis.pdf  used on input line 343
+.
+(pdftex.def)             Requested size: 250.93245pt x 108.37743pt.
+[3 <../figures/task_datasets.pdf> <../figures/backbone_comparison.pdf>]
+(./main.bbl [4 <../figures/cl_metrics.pdf> <../figures/accuracy_matrix.pdf> <..
+/figures/acc_evolution.pdf> <../figures/kernel_analysis.pdf>])
+Underfull \hbox (badness 3895) in paragraph at lines 431--433
+[]\OT1/cmr/m/n/10 (+20) Code, fig-ures, and data: []$\OT1/cmtt/m/n/10 https : /
+ / github . com /
+ []
+
+[5
 
 ] (./main.aux)
  ***********
@@ -661,44 +673,39 @@ LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: C6967E7F6E40C40215685618911C7CAA;2971.
+(rerunfilecheck)             Checksum: 875792E6BEF376385A2A736FA91BEA9D;3215.
  ) 
 Here is how much of TeX's memory you used:
- 16154 strings out of 476106
- 251462 string characters out of 5793933
- 1948975 words of memory out of 5000000
- 37712 multiletter control sequences out of 15000+600000
- 576929 words of font info for 174 fonts, out of 8000000 for 9000
+ 16122 strings out of 476106
+ 251412 string characters out of 5793933
+ 1947975 words of memory out of 5000000
+ 37699 multiletter control sequences out of 15000+600000
+ 574802 words of font info for 164 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 79i,12n,93p,1001b,577s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 79i,12n,93p,1001b,579s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/shar
-e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></usr/share/texli
-ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmmi9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmmib10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cme
-xtra/cmmib7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/
-share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/te
-xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/te
-xmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmsy5.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmsy9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mtt10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt9.p
-fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pf
-b></usr/share/texmf/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on main.pdf (5 pages, 491026 bytes).
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/share/texli
+ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dis
+t/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/texmf-dist/fonts
+/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texlive/texmf-dist/fonts/type1/
+public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
+amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
+s/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr
+8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></
+usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/sh
+are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/tex
+live/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/share/texlive/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-di
+st/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmtt9.pfb></usr/share/texlive/texmf-dist/fonts/type
+1/public/amsfonts/symbols/msbm10.pfb></usr/share/texmf/fonts/type1/public/cm-su
+per/sfrm1000.pfb>
+Output written on main.pdf (5 pages, 475872 bytes).
 PDF statistics:
- 857 PDF objects out of 1000 (max. 8388607)
- 333 compressed objects within 4 object streams
- 64 named destinations out of 1000 (max. 500000)
- 40148 words of extra memory for PDF output out of 42996 (max. 10000000)
+ 927 PDF objects out of 1000 (max. 8388607)
+ 324 compressed objects within 4 object streams
+ 59 named destinations out of 1000 (max. 500000)
+ 40153 words of extra memory for PDF output out of 42996 (max. 10000000)
 

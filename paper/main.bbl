@@ -5,13 +5,6 @@
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
-\bibitem[Havl{\'\i}{\v{c}}ek et~al.(2019)Havl{\'\i}{\v{c}}ek, C{\'o}rcoles,
-  Temme, Harrow, Kandala, Chow, and Gambetta]{havlicek2019}
-Vojt{\v{e}}ch Havl{\'\i}{\v{c}}ek, Antonio~D C{\'o}rcoles, Kristan Temme,
-  Aram~W Harrow, Abhinav Kandala, Jerry~M Chow, and Jay~M Gambetta.
-\newblock Supervised learning with quantum-enhanced feature spaces.
-\newblock \emph{Nature}, 567\penalty0 (7747):\penalty0 209--212, 2019.
-
 \bibitem[McCloskey and Cohen(1989)]{mccloskey1989}
 Michael McCloskey and Neal~J Cohen.
 \newblock Catastrophic interference in connectionist networks: The sequential
@@ -31,6 +24,19 @@ Maria Schuld and Nathan Killoran.
 \newblock Quantum machine learning in feature {Hilbert} spaces.
 \newblock \emph{Physical Review Letters}, 122\penalty0 (4):\penalty0 040504,
   2019.
+
+\bibitem[Havl{\'\i}{\v{c}}ek et~al.(2019)Havl{\'\i}{\v{c}}ek, C{\'o}rcoles,
+  Temme, Harrow, Kandala, Chow, and Gambetta]{havlicek2019}
+Vojt{\v{e}}ch Havl{\'\i}{\v{c}}ek, Antonio~D C{\'o}rcoles, Kristan Temme,
+  Aram~W Harrow, Abhinav Kandala, Jerry~M Chow, and Jay~M Gambetta.
+\newblock Supervised learning with quantum-enhanced feature spaces.
+\newblock \emph{Nature}, 567\penalty0 (7747):\penalty0 209--212, 2019.
+
+\bibitem[Mari et~al.(2020)Mari, Bromley, Izaac, Schuld, and
+  Killoran]{mari2020transfer}
+Andrea Mari, Thomas~R Bromley, Josh Izaac, Maria Schuld, and Nathan Killoran.
+\newblock Transfer learning in hybrid classical-quantum neural networks.
+\newblock \emph{Quantum}, 4:\penalty0 340, 2020.
 
 \bibitem[Lopez-Paz and Ranzato(2017)]{lopez2017gradient}
 David Lopez-Paz and Marc'Aurelio Ranzato.
@@ -62,11 +68,5 @@ James Kirkpatrick, Razvan Pascanu, Neil Rabinowitz, Joel Veness, Guillaume
 \newblock Overcoming catastrophic forgetting in neural networks.
 \newblock \emph{Proceedings of the National Academy of Sciences}, 114\penalty0
   (13):\penalty0 3521--3526, 2017.
-
-\bibitem[Mari et~al.(2020)Mari, Bromley, Izaac, Schuld, and
-  Killoran]{mari2020transfer}
-Andrea Mari, Thomas~R Bromley, Josh Izaac, Maria Schuld, and Nathan Killoran.
-\newblock Transfer learning in hybrid classical-quantum neural networks.
-\newblock \emph{Quantum}, 4:\penalty0 340, 2020.
 
 \end{thebibliography}

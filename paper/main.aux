@@ -2,69 +2,69 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\citation{havlicek2019}
 \citation{mccloskey1989}
 \citation{biamonte2017,schuld2019}
-\citation{lopez2017gradient}
+\citation{havlicek2019}
+\citation{mari2020transfer}
+\citation{havlicek2019}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Background}{1}{section.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Variational Quantum Classifiers}{1}{subsection.2.1}\protected@file@percent }
-\citation{havlicek2019}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Quantum Kernel Estimation}{1}{subsection.2.1}\protected@file@percent }
+\citation{mari2020transfer}
+\citation{lopez2017gradient}
 \citation{scikit-learn}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Continual Learning Metrics}{2}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Quantum Transfer Continual Learning}{2}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Problem Setting}{2}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}QTCL Algorithm}{2}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{(1) Parameter Transfer.}{2}{section*.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{(2) Quantum EWC.}{2}{section*.3}\protected@file@percent }
-\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces QTCL: Quantum Transfer Continual Learning}}{2}{algorithm.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces QTCL + Backbone pipeline: input features are transformed by a frozen classical MLP before ZZFeatureMap quantum encoding. The kernel matrix feeds an SVM classifier.}}{2}{figure.caption.2}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{alg:qtcl}{{1}{2}{QTCL: Quantum Transfer Continual Learning}{algorithm.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces QTCL circuit: ZZFeatureMap encoder (left of barrier) and TwoLocal variational ansatz (right). Measurements are used to estimate class probabilities via parity mapping.}}{2}{figure.caption.5}\protected@file@percent }
-\newlabel{fig:circuit}{{1}{2}{QTCL circuit: ZZFeatureMap encoder (left of barrier) and TwoLocal variational ansatz (right). Measurements are used to estimate class probabilities via parity mapping}{figure.caption.5}{}}
-\@writefile{toc}{\contentsline {paragraph}{(3) Quantum Rehearsal.}{2}{section*.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Circuit Architecture}{2}{subsection.3.3}\protected@file@percent }
+\newlabel{fig:pipeline}{{1}{2}{QTCL + Backbone pipeline: input features are transformed by a frozen classical MLP before ZZFeatureMap quantum encoding. The kernel matrix feeds an SVM classifier}{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Classical Backbone for Quantum Transfer}{2}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Continual Learning Metrics}{2}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}QTCL Framework}{2}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Architecture Overview}{2}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}QTCL Algorithm}{2}{subsection.3.2}\protected@file@percent }
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces QTCL v2: Backbone + QKE + Rehearsal}}{2}{algorithm.1}\protected@file@percent }
+\newlabel{alg:qtcl}{{1}{2}{QTCL v2: Backbone + QKE + Rehearsal}{algorithm.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces ZZFeatureMap circuit ($n=4$, reps=2) used as quantum kernel. The same circuit runs on the local simulator and on IBM Quantum backends without modification.}}{2}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:circuit}{{2}{2}{ZZFeatureMap circuit ($n=4$, reps=2) used as quantum kernel. The same circuit runs on the local simulator and on IBM Quantum backends without modification}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}IBM Quantum Runtime Integration}{2}{subsection.3.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4}Experimental Setup}{2}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Tasks}{2}{subsection.4.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces PCA projections (2D) of the four task datasets showing distinct decision boundaries that challenge naive sequential learning.}}{3}{figure.caption.6}\protected@file@percent }
-\newlabel{fig:tasks}{{2}{3}{PCA projections (2D) of the four task datasets showing distinct decision boundaries that challenge naive sequential learning}{figure.caption.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Accuracy matrices for all methods. Each cell $(i,j)$ shows test accuracy on task $j$ after training sequentially through task $i$. Darker green indicates higher accuracy.}}{3}{figure.caption.7}\protected@file@percent }
-\newlabel{fig:accmat}{{3}{3}{Accuracy matrices for all methods. Each cell $(i,j)$ shows test accuracy on task $j$ after training sequentially through task $i$. Darker green indicates higher accuracy}{figure.caption.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Baselines}{3}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Methods}{2}{subsection.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces PCA projections of the four task datasets. Feature rotations across tasks create heterogeneous manifolds that challenge naive sequential learning.}}{3}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:tasks}{{3}{3}{PCA projections of the four task datasets. Feature rotations across tasks create heterogeneous manifolds that challenge naive sequential learning}{figure.caption.4}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Hyperparameters}{3}{subsection.4.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5}Results}{3}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Accuracy Matrices}{3}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Impact of Classical Backbone}{3}{subsection.5.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Continual Learning Metrics}{3}{subsection.5.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Continual learning metrics. Best quantum result in \textbf  {bold}. $\uparrow $: higher is better; $\downarrow $: lower is better.}}{3}{table.caption.8}\protected@file@percent }
-\newlabel{tab:metrics}{{1}{3}{Continual learning metrics. Best quantum result in \textbf {bold}. $\uparrow $: higher is better; $\downarrow $: lower is better}{table.caption.8}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Side-by-side comparison of all four CL metrics across methods. QTCL (proposed) dominates on AA and Forgetting; only quantum method with positive BWT.}}{3}{figure.caption.9}\protected@file@percent }
-\newlabel{fig:metrics}{{4}{3}{Side-by-side comparison of all four CL metrics across methods. QTCL (proposed) dominates on AA and Forgetting; only quantum method with positive BWT}{figure.caption.9}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Accuracy Evolution}{3}{subsection.5.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Forgetting Analysis}{3}{subsection.5.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Radar Chart}{3}{subsection.5.5}\protected@file@percent }
-\citation{parisi2019continual,kirkpatrick2017overcoming}
-\citation{kirkpatrick2017overcoming}
-\citation{lopez2017gradient}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Direct comparison of CL metrics with (dark blue) and without (gray) the classical backbone. The backbone consistently improves AA and FWT across quantum methods.}}{3}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:bbcomp}{{4}{3}{Direct comparison of CL metrics with (dark blue) and without (gray) the classical backbone. The backbone consistently improves AA and FWT across quantum methods}{figure.caption.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Continual learning metrics. Best quantum result in \textbf  {bold}. $\uparrow $: higher is better; $\downarrow $: lower is better.}}{3}{table.caption.6}\protected@file@percent }
+\newlabel{tab:metrics}{{1}{3}{Continual learning metrics. Best quantum result in \textbf {bold}. $\uparrow $: higher is better; $\downarrow $: lower is better}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Accuracy Matrices and Evolution}{3}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Quantum Kernel Analysis}{3}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Discussion}{3}{section.6}\protected@file@percent }
+\citation{parisi2019continual,kirkpatrick2017overcoming,lopez2017gradient}
 \citation{mari2020transfer}
+\citation{havlicek2019,schuld2019}
 \bibstyle{unsrtnat}
 \bibdata{references}
-\bibcite{havlicek2019}{{1}{2019}{{Havl{\'\i }{\v {c}}ek et~al.}}{{Havl{\'\i }{\v {c}}ek, C{\'o}rcoles, Temme, Harrow, Kandala, Chow, and Gambetta}}}
-\bibcite{mccloskey1989}{{2}{1989}{{McCloskey and Cohen}}{{}}}
-\bibcite{biamonte2017}{{3}{2017}{{Biamonte et~al.}}{{Biamonte, Wittek, Pancotti, Rebentrost, Wiebe, and Lloyd}}}
-\bibcite{schuld2019}{{4}{2019}{{Schuld and Killoran}}{{}}}
-\bibcite{lopez2017gradient}{{5}{2017}{{Lopez-Paz and Ranzato}}{{}}}
-\bibcite{scikit-learn}{{6}{2011}{{Pedregosa et~al.}}{{Pedregosa, Varoquaux, Gramfort, Michel, Thirion, Grisel, Blondel, Prettenhofer, Weiss, Dubourg, et~al.}}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Accuracy on each task over the training sequence. Steeper drops indicate greater forgetting.}}{4}{figure.caption.10}\protected@file@percent }
-\newlabel{fig:evolution}{{5}{4}{Accuracy on each task over the training sequence. Steeper drops indicate greater forgetting}{figure.caption.10}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Per-task catastrophic forgetting: accuracy drop from peak to final evaluation.}}{4}{figure.caption.11}\protected@file@percent }
-\newlabel{fig:forgetting}{{6}{4}{Per-task catastrophic forgetting: accuracy drop from peak to final evaluation}{figure.caption.11}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Discussion}{4}{section.6}\protected@file@percent }
+\bibcite{mccloskey1989}{{1}{1989}{{McCloskey and Cohen}}{{}}}
+\bibcite{biamonte2017}{{2}{2017}{{Biamonte et~al.}}{{Biamonte, Wittek, Pancotti, Rebentrost, Wiebe, and Lloyd}}}
+\bibcite{schuld2019}{{3}{2019}{{Schuld and Killoran}}{{}}}
+\bibcite{havlicek2019}{{4}{2019}{{Havl{\'\i }{\v {c}}ek et~al.}}{{Havl{\'\i }{\v {c}}ek, C{\'o}rcoles, Temme, Harrow, Kandala, Chow, and Gambetta}}}
+\bibcite{mari2020transfer}{{5}{2020}{{Mari et~al.}}{{Mari, Bromley, Izaac, Schuld, and Killoran}}}
+\bibcite{lopez2017gradient}{{6}{2017}{{Lopez-Paz and Ranzato}}{{}}}
+\bibcite{scikit-learn}{{7}{2011}{{Pedregosa et~al.}}{{Pedregosa, Varoquaux, Gramfort, Michel, Thirion, Grisel, Blondel, Prettenhofer, Weiss, Dubourg, et~al.}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Side-by-side comparison of four CL metrics. QTCL + Backbone achieves the best combined AA and FWT among quantum methods.}}{4}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:metrics}{{5}{4}{Side-by-side comparison of four CL metrics. QTCL + Backbone achieves the best combined AA and FWT among quantum methods}{figure.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Accuracy matrices $a[i,j]$: accuracy on task $j$ after training through task $i$. Backbone variants show higher off-diagonal values, reflecting improved forward transfer.}}{4}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:accmat}{{6}{4}{Accuracy matrices $a[i,j]$: accuracy on task $j$ after training through task $i$. Backbone variants show higher off-diagonal values, reflecting improved forward transfer}{figure.caption.8}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {7}Related Work}{4}{section.7}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Radar chart comparing methods across normalized CL metrics. Larger area indicates better overall performance.}}{4}{figure.caption.12}\protected@file@percent }
-\newlabel{fig:radar}{{7}{4}{Radar chart comparing methods across normalized CL metrics. Larger area indicates better overall performance}{figure.caption.12}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion}{4}{section.8}\protected@file@percent }
-\bibcite{parisi2019continual}{{7}{2019}{{Parisi et~al.}}{{Parisi, Kemker, Part, Kanan, and Wermter}}}
-\bibcite{kirkpatrick2017overcoming}{{8}{2017}{{Kirkpatrick et~al.}}{{Kirkpatrick, Pascanu, Rabinowitz, Veness, Desjardins, Rusu, Milan, Quan, Ramalho, Grabska-Barwinska, et~al.}}}
-\bibcite{mari2020transfer}{{9}{2020}{{Mari et~al.}}{{Mari, Bromley, Izaac, Schuld, and Killoran}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Per-task accuracy evolution over training steps.}}{4}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:evolution}{{7}{4}{Per-task accuracy evolution over training steps}{figure.caption.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Quantum kernel matrix (left) and eigenspectrum (right) for task~1. Distinct block structure confirms class-discriminative geometry in quantum feature space.}}{4}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:kernel}{{8}{4}{Quantum kernel matrix (left) and eigenspectrum (right) for task~1. Distinct block structure confirms class-discriminative geometry in quantum feature space}{figure.caption.10}{}}
+\bibcite{parisi2019continual}{{8}{2019}{{Parisi et~al.}}{{Parisi, Kemker, Part, Kanan, and Wermter}}}
+\bibcite{kirkpatrick2017overcoming}{{9}{2017}{{Kirkpatrick et~al.}}{{Kirkpatrick, Pascanu, Rabinowitz, Veness, Desjardins, Rusu, Milan, Quan, Ramalho, Grabska-Barwinska, et~al.}}}
 \@writefile{toc}{\contentsline {section}{\numberline {A}Reproducibility}{5}{appendix.A}\protected@file@percent }
 \gdef \@abspage@last{5}
