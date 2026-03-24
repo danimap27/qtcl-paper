@@ -260,11 +260,8 @@ class QiskitModel(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         z    = self.encoder(x)                      # [B, 4]
         conn = self._connectors[self.current_task]
-        outs = []
-        for i in range(z.shape[0]):
-            q_out = conn(z[i:i+1])                  # [1, 4]
-            outs.append(q_out.squeeze(0))
-        return self.post_q(torch.stack(outs))       # [B, 2]
+        q_out = conn(z)                             # [B, 4] — batched PUBs
+        return self.post_q(q_out)                   # [B, 2]
 
 
 class ClassicalModel(nn.Module):
