@@ -22,7 +22,7 @@
 \usepackage{hyperref}
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage{tikz}
-\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds,decorations.pathreplacing}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds}
 \usepackage{quantikz}
 
 \definecolor{qtclblue}{RGB}{13,71,161}
@@ -31,13 +31,6 @@
 \definecolor{sharedblue}{RGB}{21,101,192}
 \definecolor{taskorange}{RGB}{230,81,0}
 \definecolor{measgray}{RGB}{66,66,66}
-
-% ── For llncs camera-ready, remove the block above and use:
-%    \documentclass{llncs}
-%    \title{...}
-%    \author{Anonymous Author(s)}   % double-blind
-%    \institute{}
-%    \maketitle
 
 \title{\textbf{Quantum Continual Learning via Fisher EWC\\
 and Experience Replay in Variational Quantum Circuits}}
@@ -56,20 +49,20 @@ and Experience Replay in Variational Quantum Circuits}}
 \begin{abstract}
 Catastrophic forgetting prevents quantum machine learning models from
 retaining previously learned tasks when trained sequentially.
-We present \emph{Quantum Transfer Continual Learning} (QTCL), a hybrid
-quantum-classical framework combining: a trainable MLP encoder, Variational
-Quantum Circuits (VQCs) with task-shared and task-specific parameter banks,
-Fisher Information-based Elastic Weight Consolidation (EWC) computed exactly
-via adjoint differentiation over the Quantum Fisher Information Matrix, and an
-experience replay buffer.
+This paper presents \emph{Quantum Transfer Continual Learning} (QTCL),
+a hybrid quantum-classical framework that combines a trainable MLP encoder,
+Variational Quantum Circuits (VQCs) with task-shared and task-specific
+parameter banks, Fisher Information-based Elastic Weight Consolidation (EWC)
+computed exactly via adjoint differentiation over the Quantum Fisher
+Information Matrix (QFIM), and an experience replay buffer.
 On Split-MNIST (5 sequential binary tasks), QTCL achieves Average Accuracy
 $\mathrm{AA} = 0.849 \pm 0.018$ and Forgetting $\mathrm{F} = 0.130 \pm 0.002$,
-versus the best classical baseline (Classical EWC: AA~$= 0.636$,
-F~$= 0.426$)---a $+21.3$\,pp accuracy improvement and $3.3\times$ forgetting
-reduction (3 seeds, 95\% CI).
-These results demonstrate that QFIM-constrained EWC combined with rehearsal
-creates a synergistic anti-forgetting mechanism that exploits the geometry of
-quantum Hilbert space.
+against the best classical baseline (Classical EWC: AA~$= 0.636$,
+F~$= 0.426$)---a $+21.3$\,pp accuracy gain and $3.3\times$ forgetting reduction
+(3~seeds, 95\% CI).
+These results show that QFIM-constrained EWC combined with rehearsal creates
+a synergistic anti-forgetting effect that exploits the geometry of quantum
+Hilbert space.
 \end{abstract}
 
 \noindent\textbf{Keywords:} Quantum Machine Learning, Continual Learning,
@@ -80,111 +73,153 @@ NISQ.
 \section{Introduction}
 \label{sec:intro}
 
-Continual (lifelong) learning requires a model to acquire new tasks without
-erasing prior knowledge---a property known as \emph{catastrophic
-forgetting}~\cite{mccloskey1989,goodfellow2013empirical}.
-Classical mitigation strategies include regularization (EWC~\cite{kirkpatrick2017overcoming},
-SI~\cite{zenke2017continual}) and replay-based methods (iCaRL~\cite{Rebuffi2017}).
+In many practical settings, a machine learning model must learn a sequence of
+tasks over time without access to the data of previous tasks.
+This scenario, known as \emph{continual} or \emph{lifelong} learning, is
+hindered by \emph{catastrophic forgetting}~\cite{mccloskey1989,goodfellow2013empirical}:
+when a model is trained on a new task, its performance on prior tasks
+degrades sharply because the gradient updates overwrite previously learned
+parameters.
 
-Variational Quantum Circuits (VQCs)~\cite{cerezo2021variational,jerbi2023beyond} operate in an
-exponentially large Hilbert space, yielding outputs bounded to $[-1,+1]$ and a
-natural Riemannian metric given by the \emph{Quantum Fisher Information Matrix}
-(QFIM)~\cite{haug2021}.
-Applying Fisher-based EWC to VQC parameters is therefore not merely a heuristic
-adaptation---it operates on a geometrically meaningful quantity intrinsic to
-the quantum parameter landscape.
-However, the \emph{barren plateau} phenomenon~\cite{mcclean2018barren,larocca2024review}
-means that once parameters drift away from a previous solution, gradient vanishing
-makes recovery exponentially hard.
-Crucially, the connection between circuit expressibility and barren plateaus
-has been formalized~\cite{holmes2022connecting}: highly expressive ansätze
-such as \texttt{StronglyEntanglingLayers} are prone to concentration, motivating
-the compact 4-qubit design chosen in QTCL.
-We hypothesize that experience replay provides the gradient anchors necessary
-to counteract this effect.
+Classical approaches to this problem fall into three categories.
+\emph{Regularization} methods~\cite{kirkpatrick2017overcoming,zenke2017continual}
+penalize changes to parameters that were important for past tasks.
+\emph{Replay} methods~\cite{Rebuffi2017} store a small subset of past data
+and replay it during new-task training.
+\emph{Architecture} methods allocate separate parameter sets per task.
+In practice, combining regularization and replay yields the best
+trade-off~\cite{Rebuffi2017}.
 
-\noindent\textbf{Contributions:}
+Variational Quantum Circuits (VQCs)~\cite{cerezo2021variational,jerbi2023beyond}
+are a class of parameterized quantum circuits suitable for machine learning
+in the Noisy Intermediate-Scale Quantum (NISQ) regime.
+Their parameter landscape is described by the \emph{Quantum Fisher Information
+Matrix} (QFIM)~\cite{haug2021}, a Riemannian metric that captures the
+sensitivity of the circuit output to parameter changes.
+Applying Fisher-based EWC to VQC parameters is therefore geometrically motivated:
+it protects the directions of highest curvature in quantum parameter space,
+not just in the classical loss landscape.
+
+However, two problems arise in this setting.
+First, the \emph{barren plateau} phenomenon~\cite{mcclean2018barren,larocca2024review}
+causes gradients to vanish exponentially with circuit depth, making recovery
+from parameter drift during continual training hard.
+Second, the connection between circuit expressibility and gradient magnitude
+shows that highly expressive ansätze are more prone to barren
+plateaus~\cite{holmes2022connecting}, which limits the practical depth of the
+quantum model.
+
+This paper proposes QTCL, a hybrid framework that addresses these problems by
+combining: (i) QFIM-based EWC to protect quantum parameters geometrically, and
+(ii) experience replay to provide gradient anchors that prevent parameter drift
+into barren plateau regions.
+The contributions of this work are:
 \begin{enumerate}
-  \item \textbf{QTCL framework}: end-to-end encoder + VQC with task-shared/specific
-        parameters + joint Fisher EWC + rehearsal, evaluated with statistical
-        rigour (3 seeds, 95\% CI).
-  \item \textbf{Exact QFIM computation}: Fisher weights computed via adjoint
+  \item \textbf{QTCL framework}: an end-to-end hybrid model with MLP encoder,
+        VQC with task-shared and task-specific parameter banks, QFIM-based EWC,
+        and experience replay, evaluated with statistical rigour (3~seeds, 95\%~CI).
+  \item \textbf{Exact QFIM computation}: Fisher weights are computed via adjoint
         differentiation (PennyLane \texttt{lightning.qubit}), providing a
-        principled quantum geometric regularizer.
-  \item \textbf{Key result}: $+21.3$\,pp AA and $3.3\times$ less forgetting
-        over the best classical baseline on Split-MNIST.
-  \item \textbf{Ablation}: systematic analysis of EWC strength $\lambda$ and
-        rehearsal ratio $\rho$, establishing the optimal operating regime.
+        geometrically principled quantum regularizer.
+  \item \textbf{Empirical result}: $+21.3$\,pp average accuracy and $3.3\times$
+        less forgetting over the best classical baseline on Split-MNIST.
+  \item \textbf{Ablation study}: systematic analysis of EWC strength $\lambda$
+        and rehearsal ratio $\rho$, establishing the optimal operating regime.
 \end{enumerate}
 
-% ─── 2. Background ────────────────────────────────────────────────────────────
-\section{Background}
-\label{sec:background}
+The rest of the paper is organized as follows.
+Section~\ref{sec:related} reviews related work.
+Section~\ref{sec:method} describes the QTCL framework.
+Section~\ref{sec:experiments} presents the experimental results.
+Section~\ref{sec:conclusion} gives the conclusions.
 
-\noindent\textbf{MAML and meta-learning.}
-Model-Agnostic Meta-Learning (MAML)~\cite{finn2017maml} optimizes initial
-parameters for fast adaptation to new tasks.
-Although QTCL does not follow the MAML bi-level objective, it shares
-the motivation of building shared representations that transfer across tasks;
-the task-shared VQC parameter bank plays a role analogous to the MAML
-meta-initialization.
+% ─── 2. Related Work ──────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:related}
 
-\noindent\textbf{Elastic Weight Consolidation.}
-EWC~\cite{kirkpatrick2017overcoming} penalizes parameter drift in the
-directions of highest curvature of the log-likelihood landscape, weighted by
-the diagonal Fisher Information Matrix:
-\begin{equation}
-  \mathcal{L}_\mathrm{EWC} = \mathcal{L}_\mathrm{task} +
-  \frac{\lambda}{2}\sum_{t<T}\sum_i
-  \hat{F}_i^{(t)}\!\left(\theta_i - \theta_i^{(t)*}\right)^{\!2}.
-  \label{eq:ewc}
-\end{equation}
+This section covers the three areas of related work: continual learning
+methods, VQC-based machine learning, and quantum continual learning.
 
-\noindent\textbf{Quantum Fisher Information Matrix.}
-The QFIM of a parameterized state $|\psi(\boldsymbol\theta)\rangle$ is:
-\begin{equation}
-  \mathcal{F}_{ij} = 4\,\mathrm{Re}\!\left[
-    \langle\partial_i\psi|\partial_j\psi\rangle -
-    \langle\partial_i\psi|\psi\rangle\langle\psi|\partial_j\psi\rangle
-  \right],
-  \label{eq:qfim}
-\end{equation}
-which equals the real part of the Quantum Geometric Tensor~\cite{haug2021}.
-The diagonal approximation $\hat{F}_i$ used by EWC coincides with the QFIM
-diagonal under the cross-entropy loss when the model is well-calibrated,
-providing a principled connection between classical FIM-EWC and quantum
-geometric parameter protection.
-In QTCL, $\hat{F}_i$ is computed \emph{exactly} via adjoint
-differentiation---not approximated via finite differences---constituting
-a genuine quantum advantage in the regularizer computation.
+\noindent\textbf{Continual learning.}
+Kirkpatrick et al.~\cite{kirkpatrick2017overcoming} introduced EWC, which adds
+a regularization term to the loss that penalizes changes to parameters
+weighted by the diagonal of the Fisher Information Matrix (FIM).
+Zenke et al.~\cite{zenke2017continual} proposed Synaptic Intelligence (SI),
+which accumulates parameter importance online during training.
+Rebuffi et al.~\cite{Rebuffi2017} proposed iCaRL, a replay-based method that
+stores class exemplars and combines classification with representation learning.
+Surveys on transfer learning~\cite{Pan2010,Zhuang2021} provide broader
+context on how knowledge from prior tasks can be reused.
 
-% ─── 3. QTCL Framework ────────────────────────────────────────────────────────
-\section{QTCL Framework}
+\noindent\textbf{Variational quantum circuits.}
+Cerezo et al.~\cite{cerezo2021variational} review VQAs, covering their design,
+training, and applications.
+Jerbi et al.~\cite{jerbi2023beyond} show that VQC models can go beyond kernel
+methods and express functions not accessible by classical kernel machines.
+The QFIM, equal to the real part of the Quantum Geometric Tensor, gives a
+natural Riemannian metric on the parameter space of quantum
+circuits~\cite{haug2021}.
+Holmes et al.~\cite{holmes2022connecting} connect ansatz expressibility to
+gradient magnitudes, showing that more expressive circuits suffer more from
+barren plateaus.
+McClean et al.~\cite{mcclean2018barren} characterized the barren plateau problem,
+and Larocca et al.~\cite{larocca2024review} provide a recent review of
+mitigation strategies.
+Wang et al.~\cite{wang2021noise} show that hardware noise can induce barren
+plateaus independent of circuit depth.
+
+\noindent\textbf{Quantum continual learning.}
+Chen~\cite{chen2022quantumcl} studied catastrophic forgetting in VQC-based
+classifiers and proposed regularization strategies adapted to the quantum setting.
+The present work differs in three ways: it computes the QFIM exactly via adjoint
+differentiation rather than approximating it, it combines regularization with
+experience replay, and it uses a hybrid encoder that decouples classical
+pre-processing from the quantum circuit.
+
+% ─── 3. Methodology ───────────────────────────────────────────────────────────
+\section{Methodology}
 \label{sec:method}
 
+This section describes the QTCL framework.
+Section~\ref{subsec:arch} presents the model architecture.
+Section~\ref{subsec:ewc} describes the Fisher EWC formulation for hybrid models.
+Section~\ref{subsec:alg} gives the full training algorithm.
+
 \subsection{Architecture}
+\label{subsec:arch}
 
-Figure~\ref{fig:arch} illustrates QTCL.
-A two-layer MLP ($784 \xrightarrow{\mathrm{ReLU+LN}} 32 \xrightarrow{\mathrm{Tanh}} n_q$)
-maps raw MNIST pixels to a bounded latent vector $\mathbf{z}\in[-1,+1]^{n_q}$
-suitable for angle encoding.
-Layer Normalization prevents encoder drift across tasks.
-
+Figure~\ref{fig:arch} shows the full QTCL pipeline.
+A two-layer MLP maps raw inputs to a bounded latent vector $\mathbf{z}$
+suitable for angle encoding:
+\[
+  \mathbf{z} = \tanh\!\bigl(W_2\,\mathrm{LN}(\mathrm{ReLU}(W_1\mathbf{x}))\bigr)
+  \in [-1,+1]^{n_q},
+\]
+where $W_1 \in \mathbb{R}^{32 \times 784}$ and $W_2 \in \mathbb{R}^{n_q \times 32}$
+are the weight matrices, and $\mathrm{LN}$ is Layer Normalization, which
+prevents encoder drift across tasks.
 The latent vector is encoded into $n_q$ qubits via $R_Y(\pi z_i)$ rotations,
 followed by a variational ansatz with two parameter banks:
 \begin{equation}
   U_\mathrm{ans}(\boldsymbol\theta_s, \boldsymbol\theta_t) =
   U_\mathrm{SEL}(\boldsymbol\theta_t^{(t)})\,
   U_\mathrm{SEL}(\boldsymbol\theta_s),
+  \label{eq:ansatz}
 \end{equation}
-where $\boldsymbol\theta_s$ are \emph{shared} across all tasks and
-$\boldsymbol\theta_t^{(t)}$ are \emph{task-specific}.
-$U_\mathrm{SEL}$ denotes \texttt{StronglyEntanglingLayers} (parameterized
-$SU(2)$ rotations with all-to-all entanglement).
-Pauli-$Z$ expectations $[f_1,\ldots,f_{n_q}]$ feed a linear classifier.
-Default: $n_q=4$, $L_s=2$ shared + $L_t=1$ task layer ($36$ quantum parameters total).
+where $\boldsymbol\theta_s$ are parameters \emph{shared} across all tasks,
+$\boldsymbol\theta_t^{(t)}$ are parameters \emph{specific} to task $t$, and
+$U_\mathrm{SEL}$ denotes \texttt{StronglyEntanglingLayers}---parameterized
+$SU(2)$ rotations with all-to-all entanglement.
+The Pauli-$Z$ expectations $\langle Z_i \rangle \in [-1,+1]^{n_q}$ feed a
+linear classifier to produce the final prediction.
+Default configuration: $n_q=4$ qubits, $L_s=2$ shared layers and $L_t=1$
+task-specific layer (36 quantum parameters in total).
 
-% ── Architecture diagram (TikZ) ────────────────────────────────────────────
+Figure~\ref{fig:circuit} shows the VQC circuit structure for $n_q=4$ qubits,
+with angle encoding gates followed by the shared and task-specific
+\texttt{StronglyEntanglingLayers} blocks.
+
+% ── Architecture diagram ────────────────────────────────────────────────────
 \begin{figure}[t]
   \centering
   \begin{tikzpicture}[
@@ -233,15 +268,16 @@ Default: $n_q=4$, $L_s=2$ shared + $L_t=1$ task layer ($36$ quantum parameters t
             {};
     \end{scope}
   \end{tikzpicture}
-  \caption{QTCL architecture. MLP encoder (green) compresses 784-dim inputs to
-           $n_q$-dim latent space; $R_Y$ angle encoding embeds into 4 qubits;
-           \texttt{StronglyEntanglingLayers} with shared (blue, $\boldsymbol\theta_s$)
-           and task-specific (orange, $\boldsymbol\theta_t^{(t)}$) parameters;
+  \caption{QTCL architecture. The MLP encoder (green) maps 784-dim inputs to a
+           $n_q$-dim latent space via a ReLU+LayerNorm hidden layer and a Tanh
+           output; $R_Y$ angle encoding embeds the latent vector into 4 qubits;
+           shared (blue) and task-specific (orange)
+           \texttt{StronglyEntanglingLayers} form the variational ansatz;
            Pauli-$Z$ expectations feed a linear classifier.}
   \label{fig:arch}
 \end{figure}
 
-% ── VQC circuit diagram (quantikz) ─────────────────────────────────────────
+% ── VQC circuit diagram ─────────────────────────────────────────────────────
 \begin{figure}[t]
   \centering
   \begin{quantikz}[row sep=0.35cm, column sep=0.45cm]
@@ -254,46 +290,90 @@ Default: $n_q=4$, $L_s=2$ shared + $L_t=1$ task layer ($36$ quantum parameters t
     \lstick{$q_3$} & \gate{R_Y(\pi z_3)} & & & & \meter{\langle Z\rangle} \\
     \lstick{$q_4$} & \gate{R_Y(\pi z_4)} & & & & \meter{\langle Z\rangle}
   \end{quantikz}
-  \caption{VQC circuit ($n_q=4$ qubits). $R_Y(\pi z_i)$ angle encoding; two
-           shared \texttt{StronglyEntanglingLayers} (blue, $\boldsymbol\theta_s$)
-           and one task-specific layer (orange, $\boldsymbol\theta_t^{(t)}$);
-           Pauli-$Z$ expectations as output features.}
+  \caption{VQC circuit for $n_q=4$ qubits. Angle encoding gates $R_Y(\pi z_i)$
+           map the latent vector to the initial quantum state; two shared
+           \texttt{StronglyEntanglingLayers} (blue, $\boldsymbol\theta_s$) and
+           one task-specific layer (orange, $\boldsymbol\theta_t^{(t)}$) form
+           the variational ansatz; Pauli-$Z$ expectations are read as output
+           features.}
   \label{fig:circuit}
 \end{figure}
 
 \subsection{Fisher EWC for Hybrid Models}
+\label{subsec:ewc}
 
-We compute the diagonal FIM via per-sample backward passes through the full
-hybrid model (encoder + VQC + classifier):
+EWC~\cite{kirkpatrick2017overcoming} adds a penalty to the training loss that
+prevents parameters important for past tasks from changing.
+The full QTCL loss for task $T$ is:
+\begin{equation}
+  \mathcal{L}_\mathrm{QTCL} = \mathcal{L}_\mathrm{CE} +
+  \frac{\lambda}{2}\sum_{t<T}\sum_i
+  \hat{F}_i^{(t)}\!\left(\theta_i - \theta_i^{(t)*}\right)^{\!2},
+  \label{eq:ewc}
+\end{equation}
+where $\mathcal{L}_\mathrm{CE}$ is the cross-entropy loss on the current task,
+$\hat{F}_i^{(t)}$ is the estimated diagonal FIM entry for parameter $i$ after
+task $t$, $\theta_i^{(t)*}$ is the optimal value of parameter $i$ after task $t$,
+and $\lambda$ controls the regularization strength.
+
+The diagonal FIM is computed via per-sample backward passes through the full
+hybrid model:
 \begin{equation}
   \hat{F}_i^{(t)} = \frac{1}{N}\sum_{n=1}^{N}
   \!\left(\frac{\partial\log p(y_n|\mathbf{x}_n,\boldsymbol\theta)}
-               {\partial\theta_i}\right)^{\!2}\!,
-  \label{eq:fim_approx}
+               {\partial\theta_i}\right)^{\!2},
+  \label{eq:fim}
 \end{equation}
-where gradients through the VQC are computed by adjoint differentiation.
-Classical and quantum parameters are treated uniformly, applying geometrically
-motivated protection to both.
-Different strengths $\lambda_Q$ and $\lambda_C$ account for their different
-curvature scales ($p_Q = 36$ vs.\ $p_C \approx 25{,}000$).
+where $N$ is the number of calibration samples, $y_n$ is the label of sample $n$,
+$\mathbf{x}_n$ is the input, and the gradient through the VQC is computed by
+adjoint differentiation.
+Classical (encoder + classifier) and quantum (VQC) parameters are treated
+uniformly by Eq.~(\ref{eq:fim}), with separate strength values $\lambda_Q$ and
+$\lambda_C$ to account for their different curvature scales
+($p_Q = 36$ versus $p_C \approx 25{,}000$ parameters).
 
-\subsection{Algorithm}
+The QFIM of a parameterized state $|\psi(\boldsymbol\theta)\rangle$ is:
+\begin{equation}
+  \mathcal{F}_{ij} = 4\,\mathrm{Re}\!\left[
+    \langle\partial_i\psi|\partial_j\psi\rangle -
+    \langle\partial_i\psi|\psi\rangle\langle\psi|\partial_j\psi\rangle
+  \right],
+  \label{eq:qfim}
+\end{equation}
+where $|\partial_i\psi\rangle = \partial|\psi(\boldsymbol\theta)\rangle/\partial\theta_i$
+is the partial derivative of the state with respect to parameter $\theta_i$.
+The diagonal of Eq.~(\ref{eq:qfim}) equals the real part of the Quantum
+Geometric Tensor~\cite{haug2021} and coincides with $\hat{F}_i$ in
+Eq.~(\ref{eq:fim}) under the cross-entropy loss when the model is well-calibrated.
+This connection gives the EWC penalty a geometric interpretation: it penalizes
+drift along the directions of highest curvature in quantum Hilbert space.
+
+\subsection{Training Algorithm}
+\label{subsec:alg}
+
+Algorithm~\ref{alg:qtcl} describes the full QTCL training procedure.
+After each task $t$, the diagonal FIM is computed on a calibration subset and
+the current parameters are saved as the reference point for the EWC penalty.
+A reservoir sample of past data is added to the replay buffer $\mathcal{B}$,
+which is mixed with the new task data in all subsequent training steps.
 
 \begin{algorithm}[t]
-\caption{QTCL: Joint Fisher EWC + Rehearsal}
+\caption{QTCL: Fisher EWC + Experience Replay}
 \label{alg:qtcl}
 \small
 \begin{algorithmic}[1]
 \Require Tasks $\{\mathcal{T}_i\}_{i=1}^T$;
-         $\lambda_Q, \lambda_C$; rehearsal ratio $\rho$; epochs $E$
-\State Initialize $\phi, \boldsymbol\theta_s, \boldsymbol\theta_0^{(t)}, W$;
-       $\;\mathcal{B} \leftarrow \emptyset$;
-       $\;\hat{\mathbf{F}} \leftarrow \emptyset$
+         strengths $\lambda_Q, \lambda_C$; rehearsal ratio $\rho$; epochs $E$
+\State Initialize encoder $\phi$, shared $\boldsymbol\theta_s$,
+       task parameters $\boldsymbol\theta_0^{(t)}$, classifier $W$;
+       buffer $\mathcal{B} \leftarrow \emptyset$;
+       FIM store $\hat{\mathbf{F}} \leftarrow \emptyset$
 \For{$t = 1$ to $T$}
-  \State Activate task weights $\boldsymbol\theta_t^{(t)}$; train on
-         $\mathcal{D}_t \cup \mathcal{B}$ with loss
+  \State Activate task weights $\boldsymbol\theta_t^{(t)}$
+  \State Train on $\mathcal{D}_t \cup \mathcal{B}$ with loss
          $\mathcal{L}_\mathrm{CE} + \mathcal{L}_\mathrm{EWC}$
-  \State Compute $\hat{\mathbf{F}}^{(t)}$ via Eq.~\ref{eq:fim_approx};
+         (Eq.~\ref{eq:ewc}) for $E$ epochs
+  \State Compute $\hat{\mathbf{F}}^{(t)}$ via Eq.~(\ref{eq:fim});
          save $\boldsymbol\theta^{*(t)}$
   \State $\mathcal{B} \leftarrow \mathcal{B}\cup
          \mathrm{Reservoir}(\mathcal{D}_t,\,\lfloor\rho|\mathcal{D}_t|\rfloor)$
@@ -301,45 +381,100 @@ curvature scales ($p_Q = 36$ vs.\ $p_C \approx 25{,}000$).
 \end{algorithmic}
 \end{algorithm}
 
-% ─── 4. Experiments ───────────────────────────────────────────────────────────
-\section{Experiments}
+% ─── 4. Results ───────────────────────────────────────────────────────────────
+\section{Results}
 \label{sec:experiments}
 
-\subsection{Setup}
+This section reports the experimental evaluation of QTCL.
+Section~\ref{subsec:dataset} describes the benchmark dataset.
+Section~\ref{subsec:metrics} defines the evaluation metrics.
+Section~\ref{subsec:setup} details the experimental setup.
+Section~\ref{subsec:discussion} presents and discusses the results.
 
-\textbf{Benchmark.}
-Split-MNIST~\cite{lecun1998,zenke2017continual} partitions MNIST into 5
-disjoint binary tasks ($\mathcal{T}_1$: 0\,vs\,1; $\mathcal{T}_2$: 2\,vs\,3;
-\ldots; $\mathcal{T}_5$: 8\,vs\,9).
-We use 150 training and 80 test images per task (balanced).
+\subsection{Dataset}
+\label{subsec:dataset}
 
-\textbf{Methods compared.}
-(1) \textit{Classical Naive}: MLP + fine-tuning, no protection;
-(2) \textit{Classical EWC}: MLP + Fisher EWC ($\lambda_C=500$);
-(3) \textit{Quantum Naive}: QTCL architecture, no protection;
-(4) \textit{Quantum EWC}: QTCL + EWC ($\lambda_Q=200$), no rehearsal;
-(5) \textit{QTCL} (proposed): full system---VQC + EWC + rehearsal ($\rho=0.25$).
-All methods share: same encoder, Adam ($\eta=0.002$), batch size~16, 25 epochs/task.
+The evaluation uses Split-MNIST~\cite{lecun1998,zenke2017continual}, a standard
+continual learning benchmark derived from the MNIST handwritten digit dataset.
+MNIST contains 70{,}000 grayscale images ($28\times28$ pixels) of digits 0--9.
+Split-MNIST partitions the dataset into 5 sequential binary classification
+tasks: $\mathcal{T}_1$:~0\,vs\,1; $\mathcal{T}_2$:~2\,vs\,3;
+$\mathcal{T}_3$:~4\,vs\,5; $\mathcal{T}_4$:~6\,vs\,7;
+$\mathcal{T}_5$:~8\,vs\,9.
+Each task is presented to the model in order, with no access to data from
+previous tasks during training (except via the replay buffer).
+In these experiments, 150 training and 80 test images per task are used,
+balanced across the two classes.
 
-\textbf{Metrics.} Let $a_{i,j}$ be accuracy on task $j$ after training through
-task $i$:
-\[
-  \mathrm{AA} = \tfrac{1}{T}\textstyle\sum_j a_{T,j},\quad
-  \mathrm{F} = \tfrac{1}{T{-}1}\textstyle\sum_j \bigl(\max_{l} a_{l,j} - a_{T,j}\bigr).
-\]
+\subsection{Metrics}
+\label{subsec:metrics}
 
-\textbf{Backend.}
-PennyLane \texttt{lightning.qubit} (C++ statevector simulator),
-\texttt{StronglyEntanglingLayers}, adjoint differentiation.
-All results: mean $\pm$ std over 3 independent seeds.
+Let $a_{i,j}$ be the test accuracy on task $j$ after the model has been trained
+through task $i$.
+Four standard continual learning metrics are reported:
 
-\subsection{Main Results}
+\begin{equation}
+  \mathrm{AA} = \frac{1}{T}\sum_{j=1}^{T} a_{T,j},
+  \label{eq:aa}
+\end{equation}
+where $T$ is the total number of tasks and $a_{T,j}$ is the accuracy on task $j$
+at the end of training.
 
-Table~\ref{tab:main} and Figure~\ref{fig:metrics} present the results.
+\begin{equation}
+  \mathrm{F} = \frac{1}{T-1}\sum_{j=1}^{T-1}
+  \!\Bigl(\max_{l \leq T} a_{l,j} - a_{T,j}\Bigr),
+  \label{eq:forgetting}
+\end{equation}
+where $\max_{l \leq T} a_{l,j}$ is the peak accuracy ever achieved on task $j$.
+Higher $\mathrm{F}$ indicates more catastrophic forgetting.
+
+\begin{equation}
+  \mathrm{BWT} = \frac{1}{T-1}\sum_{j=1}^{T-1}\!(a_{T,j} - a_{j,j}),
+  \label{eq:bwt}
+\end{equation}
+where $a_{j,j}$ is the accuracy on task $j$ immediately after it was trained.
+Negative BWT indicates forgetting; positive BWT indicates that later training
+improved performance on earlier tasks.
+
+\begin{equation}
+  \mathrm{FWT} = \frac{1}{T-1}\sum_{j=2}^{T}\!(a_{j-1,j} - b_j),
+  \label{eq:fwt}
+\end{equation}
+where $b_j$ is a random-initialization baseline for task $j$.
+Positive FWT means that training on prior tasks helped on future ones.
+
+\subsection{Experimental Setup}
+\label{subsec:setup}
+
+\noindent\textbf{Methods compared.}
+Five methods are evaluated:
+(1)~\textit{Classical Naive}: MLP with fine-tuning and no anti-forgetting
+protection;
+(2)~\textit{Classical EWC}: MLP with Fisher EWC ($\lambda_C=500$);
+(3)~\textit{Quantum Naive}: the QTCL architecture with no protection;
+(4)~\textit{Quantum EWC}: QTCL with EWC ($\lambda_Q=200$) and no rehearsal;
+(5)~\textit{QTCL} (proposed): full system---VQC + EWC + rehearsal ($\rho=0.25$).
+All methods share the same encoder, Adam optimizer ($\eta=0.002$),
+batch size~16, and 25 training epochs per task.
+
+\noindent\textbf{Quantum backend.}
+All quantum experiments run on PennyLane \texttt{lightning.qubit}, a C++
+statevector simulator with adjoint differentiation.
+The \texttt{StronglyEntanglingLayers} template is used as the variational ansatz.
+All results are means $\pm$ standard deviation over 3 independent random seeds.
+
+\subsection{Result Discussion}
+\label{subsec:discussion}
+
+Table~\ref{tab:main} reports the four CL metrics for all five methods.
+QTCL achieves the best performance on all metrics by a large margin.
+Figure~\ref{fig:metrics} shows the metric comparison with 95\% confidence
+intervals, making the gap between QTCL and the baselines visible.
 
 \begin{table}[t]
   \centering
-  \caption{CL metrics on Split-MNIST (mean $\pm$ std, $n=3$ seeds, PennyLane backend).
+  \caption{CL metrics on Split-MNIST (mean $\pm$ std, $n=3$ seeds,
+           PennyLane backend).
            $\uparrow$: higher is better; $\downarrow$: lower is better.}
   \label{tab:main}
   \small
@@ -365,183 +500,199 @@ Table~\ref{tab:main} and Figure~\ref{fig:metrics} present the results.
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.9\columnwidth]{../figures/cl_metrics.pdf}
-  \caption{CL metrics (mean $\pm$ 95\% CI, $n=3$ seeds).
-           QTCL (dark blue) dominates all baselines.
-           Quantum EWC without rehearsal is comparable to Classical EWC,
-           confirming that rehearsal is the critical component activating
-           the quantum advantage.}
+  \caption{CL metrics comparison (mean $\pm$ 95\% CI, $n=3$ seeds).
+           QTCL (dark blue) obtains the best values on all four metrics.
+           The gap between Quantum EWC and QTCL shows that rehearsal is the
+           critical component that activates the quantum advantage.}
   \label{fig:metrics}
 \end{figure}
 
-Key observations:
+Three patterns stand out from Table~\ref{tab:main} and Figure~\ref{fig:metrics}.
 
-\noindent\textbf{Rehearsal is essential.}
-Quantum EWC alone (AA~$=0.613$) barely exceeds Classical EWC (AA~$=0.636$).
-Adding rehearsal to the quantum model yields a $+0.236$ AA jump---the
-largest single-component gain across all methods.
+\noindent\textbf{Rehearsal is the critical component.}
+Quantum EWC alone (AA~$=0.613$) obtains similar performance to Classical EWC
+(AA~$=0.636$), with no significant benefit from the quantum regularizer.
+Adding rehearsal to the quantum model yields a $+0.236$ AA jump---the largest
+single-component gain across all methods.
+This result supports the hypothesis that replay provides the gradient signals
+needed to keep parameters out of barren plateau regions.
 
 \noindent\textbf{Forgetting reduction.}
-QTCL reduces forgetting from 42.6\% (Classical EWC) to 13.0\%:
-a $3.3\times$ absolute reduction.
-
-\noindent\textbf{Forward transfer.}
-QTCL achieves positive FWT ($+0.038$), indicating that the shared
-Hilbert space geometry generalizes to unseen tasks even before
-explicit training---a property absent in all classical baselines.
-
-Figure~\ref{fig:accmat} confirms these findings at task granularity:
-QTCL maintains near-peak off-diagonal entries in the $5\times5$
-accuracy matrix, while classical methods exhibit rapid diagonal decay.
+QTCL reduces forgetting from 42.6\% (Classical EWC) to 13.0\%, a $3.3\times$
+absolute reduction as measured by Eq.~(\ref{eq:forgetting}).
+The accuracy matrix in Figure~\ref{fig:accmat} confirms this at task granularity:
+QTCL preserves near-peak off-diagonal entries in the $5\times5$ matrix,
+whereas Classical EWC shows rapid diagonal decay.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.9\columnwidth]{../figures/accuracy_matrix.pdf}
-  \caption{Accuracy matrices $a[i,j]$ for Classical EWC (left) and QTCL (right).
-           QTCL preserves high off-diagonal accuracy throughout sequential training.}
+  \caption{Accuracy matrices $a[i,j]$ (Eq.~\ref{eq:aa}) for Classical EWC (left)
+           and QTCL (right). Each cell $(i,j)$ is the accuracy on task $j$ after
+           training through task $i$. QTCL maintains high off-diagonal accuracy
+           throughout sequential training, while Classical EWC shows sharp
+           off-diagonal decay.}
   \label{fig:accmat}
 \end{figure}
 
-% ─── 5. Ablation ──────────────────────────────────────────────────────────────
-\section{Ablation Study}
-\label{sec:ablation}
+\noindent\textbf{Forward transfer.}
+QTCL achieves positive FWT ($+0.038$, Eq.~\ref{eq:fwt}), indicating that
+the shared Hilbert space geometry of the VQC generalizes to tasks not yet seen.
+All classical baselines have negative FWT.
 
-We ablate the two most impactful hyperparameters using 2 seeds per configuration.
+\noindent\textbf{Ablation study.}
+Figure~\ref{fig:abl_lam} shows AA as a function of EWC strength
+$\lambda_Q \in \{50, 100, 200, 500, 1000, 2000\}$.
+Performance peaks at $\lambda_Q = 200$, which is lower than the classical
+optimum ($\sim$500).
+This difference reflects the compact VQC parameter space (36 parameters):
+the regularization weight per parameter is higher, so a smaller global $\lambda$
+is enough to prevent over-constraining new-task learning.
 
-\noindent\textbf{EWC regularization strength $\lambda$.}
-Figure~\ref{fig:abl_lam} shows AA vs.\ $\lambda_Q \in \{50,100,200,500,1000,2000\}$.
-Performance peaks at $\lambda_Q=200$, which is notably lower than the
-classical optimum ($\sim$500).
-This reflects the compact quantum parameter space (36 parameters): the
-regularization burden per parameter is much higher, requiring a smaller
-global $\lambda$ to avoid over-constraining new-task learning.
+Figure~\ref{fig:abl_rho} shows AA as a function of rehearsal ratio
+$\rho \in \{0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4\}$.
+At $\rho=0$, QTCL reduces to Quantum EWC.
+AA grows as $\rho$ increases and reaches a plateau at $\rho=0.25$,
+showing that a 25\% replay buffer is the best accuracy-efficiency operating point.
 
 \begin{figure}[t]
   \centering
   \begin{minipage}{0.48\columnwidth}
     \centering
     \includegraphics[width=\linewidth]{../figures/ablation_lambda.pdf}
-    \caption{AA vs.\ EWC strength $\lambda$. Quantum optimum ($\lambda=200$)
-             is lower than classical, reflecting the compact parameter space.}
+    \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of EWC strength
+             $\lambda_Q$. The quantum optimum ($\lambda_Q=200$) is lower than
+             the classical one, reflecting the smaller VQC parameter space.}
     \label{fig:abl_lam}
   \end{minipage}
   \hfill
   \begin{minipage}{0.48\columnwidth}
     \centering
     \includegraphics[width=\linewidth]{../figures/ablation_rehearsal.pdf}
-    \caption{AA vs.\ rehearsal ratio $\rho$. Performance plateaus at
-             $\rho=0.25$; $\rho=0$ degrades to Quantum EWC baseline.}
+    \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of rehearsal
+             ratio $\rho$. Performance reaches a plateau at $\rho=0.25$;
+             setting $\rho=0$ degrades to the Quantum EWC baseline.}
     \label{fig:abl_rho}
   \end{minipage}
 \end{figure}
 
-\noindent\textbf{Rehearsal ratio $\rho$.}
-Figure~\ref{fig:abl_rho} shows AA vs.\ $\rho \in \{0,0.1,0.15,0.2,0.25,0.3,0.4\}$.
-At $\rho=0$, QTCL collapses to Quantum EWC.
-AA increases monotonically up to $\rho=0.25$, then plateaus.
-This confirms that a 25\% replay buffer is the optimal accuracy-efficiency
-trade-off and that rehearsal is the primary driver of the quantum advantage.
-
-% ─── 6. Conclusions ───────────────────────────────────────────────────────────
+% ─── 5. Conclusions ───────────────────────────────────────────────────────────
 \section{Conclusions}
 \label{sec:conclusion}
 
-We presented QTCL, a hybrid quantum-classical continual learning framework
-that combines QFIM-based EWC (computed exactly via adjoint differentiation)
-with experience replay in a VQC with task-shared and task-specific parameter
-banks.
-On Split-MNIST, QTCL achieves AA~$=0.849$ and F~$=0.130$ (3 seeds),
-a $+21.3$\,pp accuracy and $3.3\times$ forgetting reduction over the best
-classical baseline---demonstrating a genuine quantum advantage in the
-continual learning setting.
+This paper presented QTCL, a hybrid quantum-classical continual learning
+framework that combines QFIM-based EWC (computed exactly via adjoint
+differentiation) with experience replay in a VQC with task-shared and
+task-specific parameter banks.
+On Split-MNIST, QTCL achieves AA~$=0.849$ and F~$=0.130$ (3~seeds, 95\%~CI),
+a $+21.3$\,pp accuracy gain and $3.3\times$ forgetting reduction against the
+best classical baseline.
 
-The ablation study establishes that: (i) rehearsal is the critical component
-activating this advantage; (ii) the optimal quantum EWC strength is lower
-than for classical models, reflecting the compact VQC parameter space;
-and (iii) the synergy of QFIM-constrained EWC and rehearsal exceeds the
-sum of individual contributions.
+Three conclusions follow from the ablation study.
+First, rehearsal is the critical component: QFIM-based EWC alone gives no
+benefit over Classical EWC, but its combination with rehearsal produces a
+large improvement.
+Second, the optimal quantum EWC strength ($\lambda_Q=200$) is lower than for
+classical models, which reflects the compact VQC parameter space.
+Third, the synergy between QFIM-constrained EWC and rehearsal exceeds the
+sum of their individual contributions.
 
-\textbf{Future work} will extend to Split-CIFAR-10 with barren-plateau
-mitigation strategies~\cite{larocca2024review},
-report real-hardware results via IBM Quantum Runtime
-(ZNE noise mitigation; noise-induced plateau effects~\cite{wang2021noise}
-are a key concern), and explore quantum generative rehearsal.
+Limitations of this work include the small dataset scale (150 samples per
+task) and the use of a simulator instead of real quantum hardware.
+Future work will extend the evaluation to Split-CIFAR-10 with barren-plateau
+mitigation strategies~\cite{larocca2024review}, report hardware results
+via IBM Quantum Runtime with Zero-Noise Extrapolation to address
+noise-induced barren plateaus~\cite{wang2021noise}, and study quantum
+generative rehearsal as an alternative to data replay.
 
 % ─── References ───────────────────────────────────────────────────────────────
 \begin{thebibliography}{99}
 
 \bibitem{mccloskey1989}
-M.~McCloskey and N.~J. Cohen,
-``Catastrophic interference in connectionist networks: The sequential
-  learning problem,''
-\emph{Psychology of Learning and Motivation}, vol.~24, pp.~109--165, 1989.
+McCloskey, M., Cohen, N.J.:
+Catastrophic interference in connectionist networks: The sequential learning problem.
+Psychol. Learn. Motiv. \textbf{24}, 109--165 (1989)
 
 \bibitem{goodfellow2013empirical}
-I.~Goodfellow, M.~Mirza, D.~Xiao, A.~Courville, and Y.~Bengio,
-``An empirical investigation of catastrophic forgetting in gradient-based
-  neural networks,''
-\emph{arXiv:1312.6211}, 2013.
+Goodfellow, I., Mirza, M., Xiao, D., Courville, A., Bengio, Y.:
+An empirical investigation of catastrophic forgetting in gradient-based neural networks.
+arXiv:1312.6211 (2013)
 
 \bibitem{kirkpatrick2017overcoming}
-J.~Kirkpatrick et al.,
-``Overcoming catastrophic forgetting in neural networks,''
-\emph{PNAS}, vol.~114, no.~13, pp.~3521--3526, 2017.
+Kirkpatrick, J. et al.:
+Overcoming catastrophic forgetting in neural networks.
+Proc. Natl. Acad. Sci. \textbf{114}(13), 3521--3526 (2017)
 
 \bibitem{zenke2017continual}
-F.~Zenke, B.~Poole, and S.~Ganguli,
-``Continual learning through synaptic intelligence,''
-\emph{ICML}, pp.~3987--3995, 2017.
+Zenke, F., Poole, B., Ganguli, S.:
+Continual learning through synaptic intelligence.
+In: ICML, pp. 3987--3995 (2017)
 
 \bibitem{Rebuffi2017}
-S.-A. Rebuffi, A.~Kolesnikov, G.~Sperl, and C.~H. Lampert,
-``iCaRL: Incremental classifier and representation learning,''
-\emph{CVPR}, pp.~2001--2010, 2017.
+Rebuffi, S.-A., Kolesnikov, A., Sperl, G., Lampert, C.H.:
+iCaRL: Incremental classifier and representation learning.
+In: CVPR, pp. 2001--2010 (2017)
 
 \bibitem{cerezo2021variational}
-M.~Cerezo et al.,
-``Variational quantum algorithms,''
-\emph{Nature Reviews Physics}, vol.~3, pp.~625--644, 2021.
-
-\bibitem{haug2021}
-T.~Haug and M.~S. Kim,
-``Optimal training of variational quantum algorithms without barren plateaus,''
-\emph{arXiv:2104.14543}, 2021.
-
-\bibitem{mcclean2018barren}
-J.~R. McClean, S.~Boixo, V.~N. Smelyanskiy, R.~Babbush, and H.~Neven,
-``Barren plateaus in quantum neural network training landscapes,''
-\emph{Nature Communications}, vol.~9, no.~4812, 2018.
-
-\bibitem{finn2017maml}
-C.~Finn, P.~Abbeel, and S.~Levine,
-``Model-agnostic meta-learning for fast adaptation of deep networks,''
-\emph{ICML}, pp.~1126--1135, 2017.
-
-\bibitem{lecun1998}
-Y.~LeCun, L.~Bottou, Y.~Bengio, and P.~Haffner,
-``Gradient-based learning applied to document recognition,''
-\emph{Proceedings of the IEEE}, vol.~86, no.~11, pp.~2278--2324, 1998.
-
-\bibitem{holmes2022connecting}
-Z.~Holmes, K.~Sharma, M.~Cerezo, and P.~J.~Coles,
-``Connecting ansatz expressibility to gradient magnitudes and barren plateaus,''
-\emph{PRX Quantum}, vol.~3, no.~1, p.~010313, 2022.
-
-\bibitem{wang2021noise}
-S.~Wang, E.~Fontana, M.~Cerezo, K.~Sharma, A.~Sone, L.~Cincio, and P.~J.~Coles,
-``Noise-induced barren plateaus in variational quantum algorithms,''
-\emph{Nature Communications}, vol.~12, p.~6961, 2021.
-
-\bibitem{larocca2024review}
-M.~Larocca, S.~Thanasilp, S.~Wang, K.~Sharma, J.~Biamonte, P.~J.~Coles,
-L.~Cincio, J.~R.~McClean, Z.~Holmes, and M.~Cerezo,
-``A review of barren plateaus in variational quantum computing,''
-\emph{Nature Reviews Physics}, 2024. \href{https://doi.org/10.1038/s42254-024-00784-9}{doi:10.1038/s42254-024-00784-9}
+Cerezo, M. et al.:
+Variational quantum algorithms.
+Nat. Rev. Phys. \textbf{3}, 625--644 (2021)
 
 \bibitem{jerbi2023beyond}
-S.~Jerbi, L.~J.~Fiderer, H.~Poulsen~Nautrup, J.~M.~K\"ubler, H.~J.~Briegel,
-and V.~Dunjko,
-``Quantum machine learning beyond kernel methods,''
-\emph{Nature Communications}, vol.~14, p.~517, 2023.
+Jerbi, S., Fiderer, L.J., Poulsen~Nautrup, H., K{\"u}bler, J.M.,
+Briegel, H.J., Dunjko, V.:
+Quantum machine learning beyond kernel methods.
+Nat. Commun. \textbf{14}, 517 (2023)
+
+\bibitem{haug2021}
+Haug, T., Kim, M.S.:
+Optimal training of variational quantum algorithms without barren plateaus.
+arXiv:2104.14543 (2021)
+
+\bibitem{mcclean2018barren}
+McClean, J.R., Boixo, S., Smelyanskiy, V.N., Babbush, R., Neven, H.:
+Barren plateaus in quantum neural network training landscapes.
+Nat. Commun. \textbf{9}, 4812 (2018)
+
+\bibitem{larocca2024review}
+Larocca, M. et al.:
+A review of barren plateaus in variational quantum computing.
+Nat. Rev. Phys. (2024). \href{https://doi.org/10.1038/s42254-024-00784-9}{doi:10.1038/s42254-024-00784-9}
+
+\bibitem{holmes2022connecting}
+Holmes, Z., Sharma, K., Cerezo, M., Coles, P.J.:
+Connecting ansatz expressibility to gradient magnitudes and barren plateaus.
+PRX Quantum \textbf{3}, 010313 (2022)
+
+\bibitem{wang2021noise}
+Wang, S. et al.:
+Noise-induced barren plateaus in variational quantum algorithms.
+Nat. Commun. \textbf{12}, 6961 (2021)
+
+\bibitem{chen2022quantumcl}
+Chen, S.Y.-C.:
+Quantum continual learning overcoming catastrophic forgetting.
+arXiv:2209.10440 (2022)
+
+\bibitem{finn2017maml}
+Finn, C., Abbeel, P., Levine, S.:
+Model-agnostic meta-learning for fast adaptation of deep networks.
+In: ICML, pp. 1126--1135 (2017)
+
+\bibitem{Pan2010}
+Pan, S.J., Yang, Q.:
+A survey on transfer learning.
+IEEE Trans. Knowl. Data Eng. \textbf{22}(10), 1345--1359 (2010)
+
+\bibitem{Zhuang2021}
+Zhuang, F. et al.:
+A comprehensive survey on transfer learning.
+Proc. IEEE \textbf{109}(1), 43--76 (2021)
+
+\bibitem{lecun1998}
+LeCun, Y., Bottou, L., Bengio, Y., Haffner, P.:
+Gradient-based learning applied to document recognition.
+Proc. IEEE \textbf{86}(11), 2278--2324 (1998)
 
 \end{thebibliography}
 
