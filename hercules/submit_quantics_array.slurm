@@ -31,7 +31,7 @@ echo "Inicio: $(date)"
 echo "========================================================"
 
 module purge
-module load Miniconda3/24.5.0
+source ~/miniconda3/etc/profile.d/conda.sh
 conda activate qtcl
 
 mkdir -p logs figures results data
