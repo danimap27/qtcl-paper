@@ -1,13 +1,13 @@
 """
 QTCL Ablation Study
 ===================
-Estudia el efecto de:
+Studies the effect of:
   1. Lambda EWC (λ ∈ {50, 200, 500, 1000, 2000})
   2. Rehearsal ratio (ρ ∈ {0.0, 0.1, 0.2, 0.3, 0.4})
   3. Circuit depth (n_shared_layers ∈ {1, 2, 3})
-  4. Qubit count (n_qubits ∈ {2, 4, 6}) — solo PennyLane
+  4. Qubit count (n_qubits ∈ {2, 4, 6}) — PennyLane only
 
-Usa 2 seeds para cada configuración (balance entre rigor y tiempo).
+Uses 2 seeds per configuration (balance between rigor and speed).
 """
 
 import os, json, warnings
@@ -37,7 +37,7 @@ except ImportError:
 FIGURES_DIR = Path(__file__).parent.parent / "figures"
 FIGURES_DIR.mkdir(exist_ok=True)
 
-# ─── Config base (igual que v6) ───────────────────────────────────────────────
+# ─── Base config (same as v6) ─────────────────────────────────────────────────
 N_QUBITS_DEFAULT  = 4
 N_SHARED_DEFAULT  = 2
 N_TASK_DEFAULT    = 1
@@ -47,14 +47,14 @@ N_TEST_PER_TASK   = 80
 N_EPOCHS          = 25
 BATCH_SIZE        = 16
 LR                = 0.002
-N_SEEDS_ABL       = 2   # 2 seeds para ablación (compromiso velocidad/rigor)
+N_SEEDS_ABL       = 2   # 2 seeds for ablation (speed/rigor tradeoff)
 TASKS = [(0,1),(2,3),(4,5),(6,7),(8,9)]
 DEVICE = torch.device("cpu")
 
 sns.set_theme(style="whitegrid", font_scale=1.1)
 
 
-# ─── Dataset ─────────────────────────────────────────────────────────────────
+# ─── Dataset ──────────────────────────────────────────────────────────────────
 def load_split_mnist(seed=42):
     rng = np.random.RandomState(seed)
     if HAS_TORCHVISION:
@@ -91,7 +91,7 @@ def load_split_mnist(seed=42):
     return tasks_tr, tasks_te
 
 
-# ─── Modelo paramétrico ───────────────────────────────────────────────────────
+# ─── Parametric model ─────────────────────────────────────────────────────────
 def make_qnode(n_qubits, n_shared, n_task):
     dev = qml.device("lightning.qubit", wires=n_qubits)
     @qml.qnode(dev, interface="torch", diff_method="adjoint")
@@ -211,7 +211,7 @@ def eval_model(model, X, y):
 def run_qtcl(tasks_tr, tasks_te, seed, lam=200., rho=0.25,
              n_qubits=N_QUBITS_DEFAULT, n_shared=N_SHARED_DEFAULT,
              n_task=N_TASK_DEFAULT) -> dict:
-    """Corre QTCL con parámetros configurables. Devuelve cl_metrics."""
+    """Runs QTCL with configurable parameters. Returns cl_metrics."""
     torch.manual_seed(seed); np.random.seed(seed)
     T     = len(tasks_tr)
     acc   = np.zeros((T,T))
@@ -302,7 +302,7 @@ def ablation_lambda():
     return results
 
 
-# ─── Ablation 2: Rehearsal ratio ─────────────────────────────────────────────
+# ─── Ablation 2: Rehearsal ratio ──────────────────────────────────────────────
 def ablation_rehearsal():
     print("\n── Ablation 2: Rehearsal ratio ──")
     ratios = [0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4]
@@ -365,7 +365,7 @@ def ablation_depth():
     return results
 
 
-# ─── Ablation 4: Qubit count ─────────────────────────────────────────────────
+# ─── Ablation 4: Qubit count ──────────────────────────────────────────────────
 def ablation_qubits():
     print("\n── Ablation 4: Qubit count ──")
     qubit_counts = [2, 4, 6]
@@ -412,7 +412,7 @@ def main():
     results["depth"]     = ablation_depth()
     results["qubits"]    = ablation_qubits()
 
-    # Guardar resultados
+    # Save results
     serializable = {}
     for k, v in results.items():
         if isinstance(v, dict):

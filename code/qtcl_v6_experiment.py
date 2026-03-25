@@ -1,29 +1,29 @@
 """
 QTCL v6 — Quantum Continual Learning: Split-MNIST end-to-end
 =============================================================
-Benchmark:  Split-MNIST (5 tareas binarias, entrenamiento secuencial)
-Arquitectura: Red completa entrenable (encoder + clasificador)
+Benchmark:  Split-MNIST (5 binary tasks, sequential training)
+Architecture: Fully trainable network (encoder + classifier)
   - Classical: Encoder(784→32→16) + MLP head
   - Quantum:   Encoder(784→32→N_QUBITS) + VQC head (PennyLane)
 
-Sin backbone congelado → el forgetting es real y pronunciado.
+No frozen backbone → forgetting is real and pronounced.
 
-Métodos:
-  1. Classical Naive   — MLP, fine-tuning secuencial (olvido máximo)
-  2. Classical EWC     — MLP + Fisher EWC (protección clásica)
-  3. Quantum Naive     — VQC, fine-tuning secuencial
+Methods:
+  1. Classical Naive   — MLP, sequential fine-tuning (maximum forgetting)
+  2. Classical EWC     — MLP + Fisher EWC (classical protection)
+  3. Quantum Naive     — VQC, sequential fine-tuning
   4. Quantum EWC       — VQC + Fisher EWC
   5. QTCL (proposed)   — VQC + EWC + rehearsal 20%
 
-Por qué quantum supera a classical:
-  (i)  El VQC tiene pocos parámetros → EWC más eficiente
-  (ii) El entanglement cuántico regulariza implícitamente
-  (iii) Los outputs Z-expectation (−1,1) acotan el espacio de hipótesis
-  (iv)  El rehearsal ancla representaciones pasadas en espacio de Hilbert
+Why quantum outperforms classical:
+  (i)  The VQC has few parameters → EWC more efficient
+  (ii) Quantum entanglement implicitly regularizes
+  (iii) Z-expectation outputs (−1,1) bound the hypothesis space
+  (iv)  Rehearsal anchors past representations in Hilbert space
 
-Referencia: Quantum_Continual_Learning repo (danimap27):
-  - Enfoque: backbone pretrained + VQC head → AA hasta 89%, AF↓
-  - Aquí: entrenamiento end-to-end para forgetting realista
+Reference: Quantum_Continual_Learning repo (danimap27):
+  - Approach: pretrained backbone + VQC head → AA up to 89%, AF↓
+  - Here: end-to-end training for realistic forgetting
 """
 
 import os
@@ -57,19 +57,19 @@ except ImportError:
 FIGURES_DIR = Path(__file__).parent.parent / "figures"
 FIGURES_DIR.mkdir(exist_ok=True)
 
-# ─── Configuración ────────────────────────────────────────────────────────────
+# ─── Configuration ────────────────────────────────────────────────────────────
 
 N_QUBITS        = 4
 N_SHARED_LAYERS = 2
 N_TASK_LAYERS   = 1
-ENC_HIDDEN      = 32       # neuronas encoder oculto
-ENC_OUT         = N_QUBITS # salida encoder → igual que n_qubits
+ENC_HIDDEN      = 32       # hidden encoder neurons
+ENC_OUT         = N_QUBITS # encoder output → same as n_qubits
 
-N_TRAIN_PER_TASK = 150     # 75 por clase
-N_TEST_PER_TASK  = 80      # 40 por clase
-N_EPOCHS         = 25      # por tarea
+N_TRAIN_PER_TASK = 150     # 75 per class
+N_TEST_PER_TASK  = 80      # 40 per class
+N_EPOCHS         = 25      # per task
 BATCH_SIZE       = 16
-LR               = 0.002   # misma LR para todos (comparación justa)
+LR               = 0.002   # same LR for all (fair comparison)
 LAMBDA_EWC_Q     = 200.0
 LAMBDA_EWC_C     = 500.0
 REHEARSAL_RATIO  = 0.25
@@ -90,10 +90,10 @@ sns.set_theme(style="whitegrid", font_scale=1.15)
 plt.rcParams.update({"font.family": "DejaVu Sans", "figure.dpi": 150})
 
 
-# ─── Dataset: Split-MNIST (pixels aplanados) ─────────────────────────────────
+# ─── Dataset: Split-MNIST (flattened pixels) ──────────────────────────────────
 
 def load_split_mnist(seed: int = 42):
-    """Devuelve tareas de Split-MNIST con pixels aplanados y normalizados."""
+    """Returns Split-MNIST tasks with flattened and normalized pixels."""
     rng = np.random.RandomState(seed)
 
     if HAS_TORCHVISION:
@@ -114,7 +114,7 @@ def load_split_mnist(seed: int = 42):
         X_tr, y_tr = X[:60000], y[:60000]
         X_te, y_te = X[60000:], y[60000:]
 
-    # Aplanar 28×28 → 784
+    # Flatten 28×28 → 784
     X_tr = X_tr.reshape(-1, 784)
     X_te = X_te.reshape(-1, 784)
 
@@ -140,10 +140,10 @@ def load_split_mnist(seed: int = 42):
     return tasks_tr, tasks_te
 
 
-# ─── Modelos ─────────────────────────────────────────────────────────────────
+# ─── Models ───────────────────────────────────────────────────────────────────
 
 class ClassicalModel(nn.Module):
-    """Encoder(784→ENC_HIDDEN→ENC_OUT) + MLP clasificador."""
+    """Encoder(784→ENC_HIDDEN→ENC_OUT) + MLP classifier."""
     def __init__(self, input_dim: int = 784):
         super().__init__()
         self.encoder = nn.Sequential(
@@ -176,7 +176,7 @@ def _make_qnode(n_qubits: int = N_QUBITS,
 
 
 class QuantumModel(nn.Module):
-    """Encoder(784→ENC_HIDDEN→N_QUBITS) + VQC + clasificador lineal."""
+    """Encoder(784→ENC_HIDDEN→N_QUBITS) + VQC + linear classifier."""
     def __init__(self, input_dim: int = 784):
         super().__init__()
         self.n_qubits  = N_QUBITS
@@ -213,7 +213,7 @@ class QuantumModel(nn.Module):
         return self.post_q(torch.stack(outs).float())    # [B, 2]
 
 
-# ─── EWC ─────────────────────────────────────────────────────────────────────
+# ─── EWC ──────────────────────────────────────────────────────────────────────
 
 class EWC:
     def __init__(self, model: nn.Module, lam: float):
@@ -260,7 +260,7 @@ class EWC:
         return self.lam * loss
 
 
-# ─── Entrenamiento ────────────────────────────────────────────────────────────
+# ─── Training ─────────────────────────────────────────────────────────────────
 
 def make_loader(X, y, shuffle=True):
     return DataLoader(TensorDataset(X, y), batch_size=BATCH_SIZE,
@@ -304,7 +304,7 @@ def eval_model(model: nn.Module, X: torch.Tensor, y: torch.Tensor) -> float:
     return correct / len(y)
 
 
-# ─── Métodos CL ──────────────────────────────────────────────────────────────
+# ─── CL Methods ───────────────────────────────────────────────────────────────
 
 def run_method(name: str, tasks_tr: list, tasks_te: list,
                seed: int) -> np.ndarray:
@@ -323,12 +323,12 @@ def run_method(name: str, tasks_tr: list, tasks_te: list,
     reh_X, reh_y = [], []
 
     for i, (X_tr, y_tr) in enumerate(tasks_tr):
-        print(f"    tarea {i+1}/{T}...", end=" ", flush=True)
+        print(f"    task {i+1}/{T}...", end=" ", flush=True)
 
         if is_q:
             model.set_task(i)
 
-        # Combinar rehearsal
+        # Combine rehearsal
         if use_reh and reh_X:
             Xr = torch.cat([X_tr] + reh_X)
             yr = torch.cat([y_tr] + reh_y)
@@ -356,7 +356,7 @@ def run_method(name: str, tasks_tr: list, tasks_te: list,
     return acc
 
 
-# ─── Métricas ─────────────────────────────────────────────────────────────────
+# ─── Metrics ──────────────────────────────────────────────────────────────────
 
 def cl_metrics(acc: np.ndarray) -> dict:
     T   = acc.shape[0]
@@ -368,7 +368,7 @@ def cl_metrics(acc: np.ndarray) -> dict:
     return {"AA": AA, "BWT": BWT, "FWT": FWT, "F": F}
 
 
-# ─── Figuras ─────────────────────────────────────────────────────────────────
+# ─── Figures ──────────────────────────────────────────────────────────────────
 
 def _c(name): return COLORS.get(name, "#607D8B")
 
@@ -396,7 +396,7 @@ def fig_architecture():
         ax.annotate("", xy=(x2, 0.50), xytext=(x1, 0.50),
                     xycoords="axes fraction", textcoords="axes fraction",
                     arrowprops=dict(arrowstyle="->", lw=1.5, color="#37474F"))
-    ax.text(0.48, 0.07, "← params compartidos ─── params específicos de tarea →",
+    ax.text(0.48, 0.07, "← shared params ─── task-specific params →",
             ha="center", fontsize=8, color="#1B5E20", transform=ax.transAxes)
     ax.set_title("QTCL Architecture: End-to-End Trainable Encoder + Quantum VQC Head\n"
                  "Backbone and head trained jointly — realistic catastrophic forgetting",
@@ -642,8 +642,8 @@ def main():
           f"rehearsal={REHEARSAL_RATIO}")
     print(f"{'='*70}")
 
-    # Figuras previas
-    print("\n[1] Figuras de arquitectura...")
+    # Preliminary figures
+    print("\n[1] Architecture figures...")
     tasks_demo, _ = load_split_mnist(seed=42)
     fig_mnist_tasks(tasks_demo)
     fig_architecture()
@@ -652,14 +652,14 @@ def main():
     except Exception as e:
         print(f"  → vqc_circuit (skip: {e})")
 
-    # Experimentos
+    # Experiments
     methods = ["Classical Naive", "Classical EWC",
                "Quantum Naive",   "Quantum EWC",  "QTCL"]
 
     all_accs    = {m: [] for m in methods}
     all_metrics = {m: [] for m in methods}
 
-    print(f"\n[2] Experimentos ({N_SEEDS} seeds × {len(methods)} métodos × {T} tareas)...")
+    print(f"\n[2] Experiments ({N_SEEDS} seeds × {len(methods)} methods × {T} tasks)...")
     for seed in range(N_SEEDS):
         print(f"\n  ── Seed {seed+1}/{N_SEEDS} ──")
         tasks_tr, tasks_te = load_split_mnist(seed=seed*37+5)
@@ -669,8 +669,8 @@ def main():
             all_accs[m].append(acc)
             all_metrics[m].append(cl_metrics(acc))
 
-    # Métricas
-    print("\n[3] Métricas (media ± std)...")
+    # Metrics
+    print("\n[3] Metrics (mean ± std)...")
     metrics_mean = {}
     for m in methods:
         aa_v  = [x["AA"]  for x in all_metrics[m]]
@@ -682,8 +682,8 @@ def main():
         print(f"  {m:20s}  AA={np.mean(aa_v):.4f}±{np.std(aa_v):.4f}"
               f"  BWT={np.mean(bwt_v):+.4f}  F={np.mean(f_v):.4f}")
 
-    # Figuras
-    print("\n[4] Figuras...")
+    # Figures
+    print("\n[4] Figures...")
     acc_mean = {m: np.mean(all_accs[m], axis=0) for m in methods}
     fig_acc_matrix(acc_mean, T)
     fig_cl_metrics_ci(all_metrics)
@@ -693,7 +693,7 @@ def main():
     fig_radar(metrics_mean)
     fig_summary_table(metrics_mean)
 
-    # Guardar resultados
+    # Save results
     rows = []
     for m in methods:
         for s, met in enumerate(all_metrics[m]):
@@ -710,18 +710,18 @@ def main():
         json.dump(summary, f, indent=2)
     print("  → results_summary.json")
 
-    # Resultado clave
+    # Key result
     print(f"\n{'='*70}")
-    print("RESULTADOS FINALES")
+    print("FINAL RESULTS")
     best_q = max(["Quantum EWC","QTCL"],
                  key=lambda n: metrics_mean[n]["AA"])
     diff   = metrics_mean[best_q]["AA"] - metrics_mean["Classical EWC"]["AA"]
     print(f"  Classical EWC:  AA={metrics_mean['Classical EWC']['AA']:.4f}")
     print(f"  {best_q:18s}: AA={metrics_mean[best_q]['AA']:.4f}")
     if diff > 0:
-        print(f"  ✅ QUANTUM supera a Classical EWC en +{diff:.4f} AA")
+        print(f"  QUANTUM outperforms Classical EWC by +{diff:.4f} AA")
     else:
-        print(f"  ℹ️  Classical EWC mantiene ventaja ({diff:+.4f})")
+        print(f"  Classical EWC maintains advantage ({diff:+.4f})")
     print(f"{'='*70}\n")
 
     return metrics_mean, acc_mean

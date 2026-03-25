@@ -1,19 +1,19 @@
 """
-QTCL Noise Experiment — Ruido real de IBM QPU (FakeBrisbane)
+QTCL Noise Experiment — Real IBM QPU noise (FakeBrisbane)
 =============================================================
-Ejecuta QTCL limpio vs QTCL con ruido de hardware real IBM y compara métricas.
+Runs clean QTCL vs QTCL with real IBM hardware noise and compares metrics.
 
-Fuente del ruido: FakeBrisbane (qiskit_ibm_runtime.fake_provider)
-  - Datos de calibración reales del procesador ibm_brisbane (Eagle r3, 127 qubits)
-  - Incluye: depolarizing error, thermal relaxation (T1/T2), readout error
-  - No requiere token IBM ni conexión a internet
+Noise source: FakeBrisbane (qiskit_ibm_runtime.fake_provider)
+  - Real calibration data from the ibm_brisbane processor (Eagle r3, 127 qubits)
+  - Includes: depolarizing error, thermal relaxation (T1/T2), readout error
+  - Does not require IBM token or internet connection
 
-Resultado: tabla clean vs noisy + figura de comparación para el paper.
+Result: clean vs noisy table + comparison figure for the paper.
 
-Uso en Hércules:
+Usage on Hercules:
   sbatch hercules/submit_noise.slurm
 
-Salidas:
+Outputs:
   results/noise_results.json
   figures/noise_comparison.pdf / .png
   figures/noise_degradation.pdf / .png
@@ -50,32 +50,32 @@ import pennylane as qml
 RESULTS_DIR = Path(__file__).parent.parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
-IBM_BACKEND  = "FakeBrisbane"   # backend de calibración
-N_SEEDS      = 2                # seeds para el experimento de ruido
-N_SHOTS      = 1024             # shots por circuito (necesario con ruido)
+IBM_BACKEND  = "FakeBrisbane"   # calibration backend
+N_SEEDS      = 2                # seeds for the noise experiment
+N_SHOTS      = 1024             # shots per circuit (required with noise)
 
 
-# ─── Noise model desde IBM FakeBrisbane ───────────────────────────────────────
+# ─── Noise model from IBM FakeBrisbane ────────────────────────────────────────
 
 def load_ibm_noise_model():
     """
-    Carga el noise model de FakeBrisbane.
-    Contiene: gate errors, T1/T2 thermal relaxation, readout errors
-    de calibración real del hardware ibm_brisbane.
+    Loads the FakeBrisbane noise model.
+    Contains: gate errors, T1/T2 thermal relaxation, readout errors
+    from real hardware calibration data of ibm_brisbane.
     """
     from qiskit_ibm_runtime.fake_provider import FakeBrisbane
     from qiskit_aer.noise import NoiseModel
 
-    print(f"  Cargando noise model de {IBM_BACKEND}...")
+    print(f"  Loading noise model from {IBM_BACKEND}...")
     backend    = FakeBrisbane()
     noise_model = NoiseModel.from_backend(backend)
 
     gates   = list(noise_model.noise_instructions)
     n_errs  = len(noise_model._local_quantum_errors) + len(noise_model._default_quantum_errors)
-    print(f"  Gates con ruido: {gates}")
-    print(f"  Total errores cuánticos registrados: {n_errs}")
+    print(f"  Gates with noise: {gates}")
+    print(f"  Total quantum errors registered: {n_errs}")
 
-    # Guardar info del noise model para el paper
+    # Save noise model info for the paper
     info = {
         "backend":        IBM_BACKEND,
         "basis_gates":    list(backend.operation_names),
@@ -85,19 +85,19 @@ def load_ibm_noise_model():
     }
     with open(RESULTS_DIR / "noise_model_info.json", "w") as f:
         json.dump(info, f, indent=2)
-    print(f"  Info guardada: results/noise_model_info.json")
+    print(f"  Info saved: results/noise_model_info.json")
 
     return noise_model
 
 
-# ─── VQC con ruido ────────────────────────────────────────────────────────────
+# ─── VQC with noise ────────────────────────────────────────────────────────────
 
 def _make_noisy_qnode(noise_model, n_qubits=N_QUBITS,
                       n_shared=N_SHARED_LAYERS, n_task=N_TASK_LAYERS):
     """
-    QNode con qiskit.aer + noise model real de IBM.
-    Usa parameter-shift (adjoint no compatible con noise model).
-    shots=N_SHOTS para simulación estocástica realista.
+    QNode with qiskit.aer + real IBM noise model.
+    Uses parameter-shift (adjoint not compatible with noise model).
+    shots=N_SHOTS for realistic stochastic simulation.
     """
     dev = qml.device(
         "qiskit.aer",
@@ -118,7 +118,7 @@ def _make_noisy_qnode(noise_model, n_qubits=N_QUBITS,
 
 
 class NoisyQuantumModel(nn.Module):
-    """QuantumModel con circuito ruidoso (qiskit.aer + IBM noise model)."""
+    """QuantumModel with noisy circuit (qiskit.aer + IBM noise model)."""
 
     def __init__(self, noise_model, input_dim=784):
         super().__init__()
@@ -156,10 +156,10 @@ class NoisyQuantumModel(nn.Module):
         return self.post_q(torch.stack(outs).float())
 
 
-# ─── Runner QTCL genérico ─────────────────────────────────────────────────────
+# ─── Generic QTCL runner ─────────────────────────────────────────────────────
 
 def run_qtcl(model, tasks_tr, tasks_te, seed):
-    """Ejecuta QTCL (EWC + rehearsal) con el modelo dado."""
+    """Runs QTCL (EWC + rehearsal) with the given model."""
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -169,7 +169,7 @@ def run_qtcl(model, tasks_tr, tasks_te, seed):
     reh_X, reh_y = [], []
 
     for i, (X_tr, y_tr) in enumerate(tasks_tr):
-        print(f"    tarea {i+1}/{T}...", end=" ", flush=True)
+        print(f"    task {i+1}/{T}...", end=" ", flush=True)
         model.set_task(i)
 
         if reh_X:
@@ -195,16 +195,16 @@ def run_qtcl(model, tasks_tr, tasks_te, seed):
     return acc
 
 
-# ─── Experimento principal ────────────────────────────────────────────────────
+# ─── Main experiment ──────────────────────────────────────────────────────────
 
 def run_noise_experiment():
     sep = "=" * 60
     print(f"\n{sep}")
     print(f"QTCL Noise Experiment — {IBM_BACKEND}")
-    print(f"Seeds: {N_SEEDS} | Shots: {N_SHOTS} | Tareas: {len(TASKS)}")
+    print(f"Seeds: {N_SEEDS} | Shots: {N_SHOTS} | Tasks: {len(TASKS)}")
     print(sep)
 
-    # Cargar noise model una sola vez
+    # Load noise model once
     noise_model = load_ibm_noise_model()
 
     clean_metrics_list = []
@@ -231,7 +231,7 @@ def run_noise_experiment():
         noisy_metrics_list.append(nm)
         print(f"  Noisy → AA={nm['AA']:.4f}  F={nm['F']:.4f}")
 
-    # ─── Resultados agregados ─────────────────────────────────────────────────
+    # ─── Aggregated results ───────────────────────────────────────────────────
     def _agg(lst, key):
         vals = [x[key] for x in lst]
         return float(np.mean(vals)), float(np.std(vals))
@@ -248,7 +248,7 @@ def run_noise_experiment():
                   for k in ["AA", "BWT", "FWT", "F"]},
     }
 
-    # Degradación absoluta
+    # Absolute degradation
     for k in ["AA", "F"]:
         delta = results["noisy"][k]["mean"] - results["clean"][k]["mean"]
         results[f"delta_{k}"] = round(delta, 4)
@@ -256,7 +256,7 @@ def run_noise_experiment():
     with open(RESULTS_DIR / "noise_results.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    # ─── Tabla consola ────────────────────────────────────────────────────────
+    # ─── Console table ────────────────────────────────────────────────────────
     print(f"\n{sep}")
     print(f"QTCL Noise Results — {IBM_BACKEND} ({N_SHOTS} shots/circuit)")
     print(f"{'Condition':20s}  {'AA':>12s}  {'BWT':>12s}  {'FWT':>12s}  {'F':>12s}")
@@ -273,21 +273,21 @@ def run_noise_experiment():
         print(f"  Δ{k} (noisy−clean): {results[f'delta_{k}']:+.4f}")
     print(sep)
 
-    # ─── Figuras ──────────────────────────────────────────────────────────────
+    # ─── Figures ──────────────────────────────────────────────────────────────
     _fig_noise_comparison(results)
     _fig_noise_degradation_bar(results)
 
-    print(f"\nResultados: results/noise_results.json")
-    print(f"Figuras:    figures/noise_comparison.pdf")
-    print(f"            figures/noise_degradation.pdf")
+    print(f"\nResults: results/noise_results.json")
+    print(f"Figures: figures/noise_comparison.pdf")
+    print(f"         figures/noise_degradation.pdf")
 
     return results
 
 
-# ─── Figuras ─────────────────────────────────────────────────────────────────
+# ─── Figures ─────────────────────────────────────────────────────────────────
 
 def _fig_noise_comparison(results):
-    """Barras agrupadas: clean vs noisy para AA, BWT, FWT, F."""
+    """Grouped bars: clean vs noisy for AA, BWT, FWT, F."""
     metrics = ["AA", "BWT", "FWT", "F"]
     labels  = ["Average\nAccuracy", "Backward\nTransfer", "Forward\nTransfer", "Forgetting"]
     x = np.arange(len(metrics))
@@ -322,7 +322,7 @@ def _fig_noise_comparison(results):
 
 
 def _fig_noise_degradation_bar(results):
-    """Degradación absoluta Δ(noisy − clean) para AA y F."""
+    """Absolute degradation Δ(noisy − clean) for AA and F."""
     metrics = ["AA", "F"]
     labels  = ["Average Accuracy", "Forgetting"]
     deltas  = [results[f"delta_{k}"] for k in metrics]

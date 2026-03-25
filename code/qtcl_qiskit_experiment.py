@@ -1,24 +1,24 @@
 """
 QTCL Qiskit — Quantum Continual Learning with Qiskit EstimatorQNN
 ==================================================================
-Misma arquitectura que v6 (PennyLane) pero con Qiskit backend.
+Same architecture as v6 (PennyLane) but with Qiskit backend.
 
 Qiskit implementation:
-  - EstimatorQNN con EfficientSU2 ansatz (similar a StronglyEntanglingLayers)
-  - TorchConnector para gradientes en PyTorch
-  - StatevectorEstimator (simulación exacta) / IBM Runtime (hardware real)
+  - EstimatorQNN with EfficientSU2 ansatz (similar to StronglyEntanglingLayers)
+  - TorchConnector for gradients in PyTorch
+  - StatevectorEstimator (exact simulation) / IBM Runtime (real hardware)
   - Task-shared + task-specific parameter split
 
-IBM Real Hardware (TODO — ejecutar cuando disponga de acceso):
-  - Requiere IBM Quantum Token: export IBM_QUANTUM_TOKEN=<token>
-  - Requiere backend: export IBM_BACKEND=ibm_kyiv (o similar 127q)
-  - Activar con: export IBM_QUANTUM=true
-  - El código corre SIN cambios en hardware real
+IBM Real Hardware (TODO — run when hardware access is available):
+  - Requires IBM Quantum Token: export IBM_QUANTUM_TOKEN=<token>
+  - Requires backend: export IBM_BACKEND=ibm_kyiv (or similar 127q)
+  - Enable with: export IBM_QUANTUM=true
+  - Code runs WITHOUT changes on real hardware
 
-Experimento idéntico a PennyLane v6 para comparación directa:
-  - Split-MNIST, 5 tareas binarias
+Experiment identical to PennyLane v6 for direct comparison:
+  - Split-MNIST, 5 binary tasks
   - 3 seeds, Fisher EWC, rehearsal 25%
-  - Métricas: AA, BWT, FWT, Forgetting
+  - Metrics: AA, BWT, FWT, Forgetting
 """
 
 import os
@@ -65,11 +65,11 @@ IBM_BACKEND     = os.getenv("IBM_BACKEND", "ibm_kyiv")
 FIGURES_DIR = Path(__file__).parent.parent / "figures"
 FIGURES_DIR.mkdir(exist_ok=True)
 
-# ─── Configuración (idéntica a v6 para comparación justa) ────────────────────
+# ─── Configuration (identical to v6 for fair comparison) ─────────────────────
 
 N_QUBITS         = 4
-N_SHARED_REPS    = 2    # repeticiones EfficientSU2 shared
-N_TASK_REPS      = 1    # repeticiones EfficientSU2 task-specific
+N_SHARED_REPS    = 2    # EfficientSU2 shared repetitions
+N_TASK_REPS      = 1    # EfficientSU2 task-specific repetitions
 ENC_HIDDEN       = 32
 ENC_OUT          = N_QUBITS
 
@@ -105,13 +105,13 @@ def build_estimator():
     - Simulation: StatevectorEstimator (exact, free)
     - Real hardware: IBMRuntimeEstimatorV2 via qiskit-ibm-runtime
 
-    TODO: Para hardware real, descomenta y configura:
+    TODO: For real hardware, uncomment and configure:
         export IBM_QUANTUM=true
-        export IBM_QUANTUM_TOKEN=<tu_token_de_ibm_quantum>
-        export IBM_BACKEND=ibm_kyiv  # o ibm_brisbane, ibm_osaka, etc.
+        export IBM_QUANTUM_TOKEN=<your_ibm_quantum_token>
+        export IBM_BACKEND=ibm_kyiv  # or ibm_brisbane, ibm_osaka, etc.
     """
     if USE_IBM_RUNTIME:
-        # ── TODO: Descomentar para hardware real ─────────────────────────────
+        # ── TODO: Uncomment for real hardware ────────────────────────────────
         # from qiskit_ibm_runtime import QiskitRuntimeService, EstimatorV2
         # from qiskit_ibm_runtime.options import EstimatorOptions
         # svc     = QiskitRuntimeService(channel="ibm_quantum", token=IBM_TOKEN)
@@ -127,19 +127,19 @@ def build_estimator():
     return StatevectorEstimator()
 
 
-# ─── Circuito Qiskit ──────────────────────────────────────────────────────────
+# ─── Qiskit Circuit ───────────────────────────────────────────────────────────
 
 def build_qiskit_circuit(n_qubits: int = N_QUBITS,
                           n_shared_reps: int = N_SHARED_REPS,
                           n_task_reps: int = N_TASK_REPS) -> QuantumCircuit:
     """
-    Construye el circuito VQC:
-      1. Encoding: Ry(pi * x_i) por qubit
-      2. Shared ansatz: EfficientSU2 con n_shared_reps repeticiones
-      3. Task-specific ansatz: EfficientSU2 con n_task_reps repeticiones
+    Builds the VQC circuit:
+      1. Encoding: Ry(pi * x_i) per qubit
+      2. Shared ansatz: EfficientSU2 with n_shared_reps repetitions
+      3. Task-specific ansatz: EfficientSU2 with n_task_reps repetitions
 
-    EfficientSU2 es análogo a StronglyEntanglingLayers de PennyLane:
-    rotaciones SU(2) locales + CNOT lineales para entanglement.
+    EfficientSU2 is analogous to StronglyEntanglingLayers in PennyLane:
+    local SU(2) rotations + linear CNOTs for entanglement.
     """
     x_params  = ParameterVector("x",  n_qubits)
     sh_params = ParameterVector("θs", n_qubits * 2 * (n_shared_reps + 1))
@@ -167,16 +167,16 @@ def build_qiskit_circuit(n_qubits: int = N_QUBITS,
 def build_qnn(task_params_cache: dict, task_id: int,
               n_qubits: int = N_QUBITS) -> TorchConnector:
     """
-    Construye un EstimatorQNN para la tarea task_id y lo envuelve
-    en TorchConnector para integración PyTorch.
+    Builds an EstimatorQNN for task task_id and wraps it
+    in TorchConnector for PyTorch integration.
     """
     qc = build_qiskit_circuit(n_qubits)
 
-    # Separar parámetros de encoding vs variacionales
+    # Separate encoding parameters vs variational parameters
     input_params = [p for p in qc.parameters if p.name.startswith("x")]
     weight_params = [p for p in qc.parameters if not p.name.startswith("x")]
 
-    # Observables: Z en todos los qubits
+    # Observables: Z on all qubits
     observables = [
         SparsePauliOp.from_list([("I" * (n_qubits - 1 - i) + "Z" + "I" * i, 1.0)])
         for i in range(n_qubits)
@@ -192,10 +192,10 @@ def build_qnn(task_params_cache: dict, task_id: int,
         weight_params=weight_params,
     )
 
-    # TorchConnector: expone el QNN como nn.Module de PyTorch
+    # TorchConnector: exposes the QNN as a PyTorch nn.Module
     n_weights = len(weight_params)
 
-    # Si hay pesos guardados para esta tarea, usarlos
+    # If saved weights exist for this task, use them
     if task_id in task_params_cache:
         init_weights = task_params_cache[task_id].detach().clone()
     else:
@@ -205,15 +205,15 @@ def build_qnn(task_params_cache: dict, task_id: int,
     return connector, n_weights
 
 
-# ─── Modelo Qiskit ────────────────────────────────────────────────────────────
+# ─── Qiskit Model ─────────────────────────────────────────────────────────────
 
 class QiskitModel(nn.Module):
     """
-    Encoder(784→32→4, Tanh) + QNN Qiskit (EfficientSU2) + clasificador lineal.
+    Encoder(784→32→4, Tanh) + QNN Qiskit (EfficientSU2) + linear classifier.
 
-    Nota: A diferencia de PennyLane (circuito único, parámetros shared/task
-    en tensores separados), con Qiskit se construye un nuevo circuito por
-    tarea. Los pesos shared se copian manualmente al nuevo conector.
+    Note: Unlike PennyLane (single circuit, shared/task parameters in separate
+    tensors), with Qiskit a new circuit is built per task. Shared weights are
+    manually copied to the new connector.
     """
 
     def __init__(self, input_dim: int = 784):
@@ -226,26 +226,26 @@ class QiskitModel(nn.Module):
         self.post_q   = nn.Linear(N_QUBITS, 2)
         self.current_task = 0
 
-        # Cache de conectores y pesos por tarea
+        # Cache of connectors and weights per task
         self._connectors: dict = {}
         self._weight_cache: dict = {}
 
-        # Crear conector para tarea 0
+        # Create connector for task 0
         conn, n_w = build_qnn(self._weight_cache, 0)
         self._connectors[0] = conn
         self.n_weights = n_w
 
-        # Registrar como parámetro del módulo
+        # Register as module parameter
         self._register_connector(0)
 
     def _register_connector(self, task_id: int):
-        """Registra los pesos del conector como parámetros del módulo."""
+        """Registers connector weights as module parameters."""
         attr = f"_qnn_weights_{task_id}"
         w = self._connectors[task_id].weight
         self.register_parameter(attr, w)
 
     def set_task(self, task_id: int):
-        """Activa la tarea y crea nuevo conector si no existe."""
+        """Activates the task and creates new connector if it does not exist."""
         if task_id not in self._connectors:
             conn, _ = build_qnn(self._weight_cache, task_id)
             self._connectors[task_id] = conn
@@ -253,7 +253,7 @@ class QiskitModel(nn.Module):
         self.current_task = task_id
 
     def save_task_weights(self, task_id: int):
-        """Guarda pesos del conector actual para re-uso."""
+        """Saves current connector weights for re-use."""
         self._weight_cache[task_id] = \
             self._connectors[task_id].weight.detach().clone()
 
@@ -265,7 +265,7 @@ class QiskitModel(nn.Module):
 
 
 class ClassicalModel(nn.Module):
-    """Baseline clásico idéntico al de v6."""
+    """Classical baseline identical to v6."""
     def __init__(self, input_dim: int = 784):
         super().__init__()
         self.encoder = nn.Sequential(
@@ -279,7 +279,7 @@ class ClassicalModel(nn.Module):
         return self.head(self.encoder(x))
 
 
-# ─── EWC (idéntico a v6) ─────────────────────────────────────────────────────
+# ─── EWC (identical to v6) ────────────────────────────────────────────────────
 
 class EWC:
     def __init__(self, model: nn.Module, lam: float):
@@ -325,7 +325,7 @@ class EWC:
         return self.lam * loss
 
 
-# ─── Dataset ─────────────────────────────────────────────────────────────────
+# ─── Dataset ──────────────────────────────────────────────────────────────────
 
 def load_split_mnist(seed: int = 42):
     rng = np.random.RandomState(seed)
@@ -367,7 +367,7 @@ def load_split_mnist(seed: int = 42):
     return tasks_tr, tasks_te
 
 
-# ─── Training ─────────────────────────────────────────────────────────────────
+# ─── Training ──────────────────────────────────────────────────────────────────
 
 def train_task(model, X, y, epochs, ewc=None):
     model.train()
@@ -397,7 +397,7 @@ def eval_model(model, X, y) -> float:
     return correct / len(y)
 
 
-# ─── CL Métodos ───────────────────────────────────────────────────────────────
+# ─── CL Methods ───────────────────────────────────────────────────────────────
 
 def run_method(name: str, tasks_tr: list, tasks_te: list, seed: int) -> np.ndarray:
     T = len(tasks_tr)
@@ -415,7 +415,7 @@ def run_method(name: str, tasks_tr: list, tasks_te: list, seed: int) -> np.ndarr
     reh_X, reh_y = [], []
 
     for i, (X_tr, y_tr) in enumerate(tasks_tr):
-        print(f"    tarea {i+1}/{T}...", end=" ", flush=True)
+        print(f"    task {i+1}/{T}...", end=" ", flush=True)
 
         if is_q:
             model.set_task(i)
@@ -459,13 +459,13 @@ def cl_metrics(acc: np.ndarray) -> dict:
     return {"AA": AA, "BWT": BWT, "FWT": FWT, "F": F}
 
 
-# ─── Figuras ─────────────────────────────────────────────────────────────────
+# ─── Figures ──────────────────────────────────────────────────────────────────
 
 def _c(name): return COLORS.get(name, "#607D8B")
 
 
 def fig_circuit_diagram():
-    """Diagrama del circuito Qiskit."""
+    """Qiskit circuit diagram."""
     qc = build_qiskit_circuit()
     try:
         fig = qc.decompose().draw(output="mpl", fold=-1)
@@ -480,7 +480,7 @@ def fig_circuit_diagram():
 
 
 def fig_comparison_pl_vs_qiskit(pl_metrics_all, qk_metrics_all):
-    """Compara PennyLane vs Qiskit en las mismas métricas."""
+    """Compares PennyLane vs Qiskit on the same metrics."""
     pl_methods = ["Classical Naive", "Classical EWC", "Quantum Naive", "Quantum EWC", "QTCL"]
     qk_methods = ["Classical Naive", "Classical EWC", "Qiskit Naive",  "Qiskit EWC",  "QTCL-Qiskit"]
     labels = ["Naive", "EWC", "Naive Q", "EWC Q", "QTCL"]
@@ -558,17 +558,17 @@ def main():
     print(f"IBM Runtime: {'ENABLED — ' + IBM_BACKEND if USE_IBM_RUNTIME else 'simulation (StatevectorEstimator)'}")
     print(f"{'='*70}")
 
-    # Circuito diagram
-    print("\n[1] Diagrama del circuito Qiskit...")
+    # Circuit diagram
+    print("\n[1] Qiskit circuit diagram...")
     fig_circuit_diagram()
 
-    # Experimentos
+    # Experiments
     methods = ["Classical Naive", "Classical EWC", "Qiskit Naive", "Qiskit EWC", "QTCL-Qiskit"]
 
     all_accs    = {m: [] for m in methods}
     all_metrics = {m: [] for m in methods}
 
-    print(f"\n[2] Experimentos ({N_SEEDS} seeds × {len(methods)} métodos × {T} tareas)...")
+    print(f"\n[2] Experiments ({N_SEEDS} seeds × {len(methods)} methods × {T} tasks)...")
     for seed in range(N_SEEDS):
         print(f"\n  ── Seed {seed+1}/{N_SEEDS} ──")
         tasks_tr, tasks_te = load_split_mnist(seed=seed*37+5)
@@ -578,8 +578,8 @@ def main():
             all_accs[m].append(acc)
             all_metrics[m].append(cl_metrics(acc))
 
-    # Métricas
-    print("\n[3] Métricas (media ± std)...")
+    # Metrics
+    print("\n[3] Metrics (mean ± std)...")
     metrics_mean = {}
     for m in methods:
         aa_v  = [x["AA"]  for x in all_metrics[m]]
@@ -591,17 +591,17 @@ def main():
         print(f"  {m:22s}  AA={np.mean(aa_v):.4f}±{np.std(aa_v):.4f}"
               f"  BWT={np.mean(bwt_v):+.4f}  F={np.mean(f_v):.4f}")
 
-    # Figuras
-    print("\n[4] Figuras...")
+    # Figures
+    print("\n[4] Figures...")
     acc_mean = {m: np.mean(all_accs[m], axis=0) for m in methods}
     fig_qiskit_metrics(all_metrics, methods)
 
-    # Cargar métricas PennyLane si existen para comparación
+    # Load PennyLane metrics if available for comparison
     pl_summary_path = Path("results/summary.json")
     if pl_summary_path.exists():
         with open(pl_summary_path) as f:
             pl_summary = json.load(f)
-        # Reconstruir all_metrics PennyLane como lista de dicts (3 seeds aproximados)
+        # Reconstruct PennyLane all_metrics as list of dicts (approx. 3 seeds)
         pl_metrics_all_approx = {}
         for m, v in pl_summary.items():
             mu, sd = v["mean"], v["std"]
@@ -611,7 +611,7 @@ def main():
             ]
         fig_comparison_pl_vs_qiskit(pl_metrics_all_approx, all_metrics)
 
-    # Guardar resultados
+    # Save results
     summary = {m: {"mean": metrics_mean[m],
                    "std":  {k: float(np.std([x[k] for x in all_metrics[m]]))
                             for k in ["AA","BWT","FWT","F"]}}
@@ -621,18 +621,18 @@ def main():
         json.dump(summary, f, indent=2)
     print(f"  → {out_path}")
 
-    # Resultado clave
+    # Key result
     print(f"\n{'='*70}")
-    print("RESULTADOS FINALES — Qiskit Backend")
+    print("FINAL RESULTS — Qiskit Backend")
     best_q = max(["Qiskit EWC","QTCL-Qiskit"],
                  key=lambda n: metrics_mean[n]["AA"])
     diff   = metrics_mean[best_q]["AA"] - metrics_mean["Classical EWC"]["AA"]
     print(f"  Classical EWC:  AA={metrics_mean['Classical EWC']['AA']:.4f}")
     print(f"  {best_q:18s}: AA={metrics_mean[best_q]['AA']:.4f}")
     if diff > 0:
-        print(f"  QUANTUM supera a Classical EWC en +{diff:.4f} AA")
+        print(f"  QUANTUM outperforms Classical EWC by +{diff:.4f} AA")
     else:
-        print(f"  Classical EWC mantiene ventaja ({diff:+.4f})")
+        print(f"  Classical EWC maintains advantage ({diff:+.4f})")
     print(f"{'='*70}\n")
 
     return metrics_mean, acc_mean

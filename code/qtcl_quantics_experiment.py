@@ -1,30 +1,30 @@
 """
-QTCL QUANTICS 2026 — Script de experimentación para Hércules HPC
+QTCL QUANTICS 2026 — Experimentation script for Hercules HPC
 =================================================================
-Reproduce Table 1 y las figuras de ablación del paper:
+Reproduces Table 1 and the ablation figures from the paper:
   "Quantum Continual Learning via Fisher EWC and Experience Replay
    in Variational Quantum Circuits"
 
-Modos de ejecución (--mode):
-  main               — Experimento principal: 5 métodos × N_SEEDS seeds
-  main --seed K      — Un único seed K (para jobs en array)
-  ablation_lambda    — Barre λ_Q ∈ {50,100,200,500,1000,2000}
-  ablation_rehearsal — Barre ρ ∈ {0,0.1,0.15,0.2,0.25,0.3,0.4}
-  figures            — Genera figuras desde resultados guardados en results/
+Execution modes (--mode):
+  main               — Main experiment: 5 methods × N_SEEDS seeds
+  main --seed K      — A single seed K (for array jobs)
+  ablation_lambda    — Sweeps λ_Q ∈ {50,100,200,500,1000,2000}
+  ablation_rehearsal — Sweeps ρ ∈ {0,0.1,0.15,0.2,0.25,0.3,0.4}
+  figures            — Generates figures from results saved in results/
 
-Salidas:
-  results/seed_{K}_main.json       — resultados de un seed (modo array)
-  results/quantics_main.json       — resultados agregados (modo main completo)
-  results/quantics_ablation.json   — ablación
+Outputs:
+  results/seed_{K}_main.json       — results for a single seed (array mode)
+  results/quantics_main.json       — aggregated results (full main mode)
+  results/quantics_ablation.json   — ablation
   figures/*.pdf, figures/*.png
 
-Uso típico en Hércules:
-  # Un solo job:
+Typical usage on Hercules:
+  # Single job:
   sbatch hercules/submit_quantics_main.slurm
 
-  # Seeds en paralelo (más rápido):
+  # Seeds in parallel (faster):
   sbatch hercules/submit_quantics_array.slurm
-  # Después de que los 3 terminen:
+  # After the 3 finish:
   python hercules/aggregate_results.py
 """
 
@@ -43,17 +43,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# ── Importar núcleo del experimento v6 ────────────────────────────────────────
+# ── Import v6 experiment core ────────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 from qtcl_v6_experiment import (
-    # Configuración
+    # Configuration
     N_QUBITS, N_SHARED_LAYERS, N_TASK_LAYERS, ENC_HIDDEN,
     N_TRAIN_PER_TASK, N_TEST_PER_TASK, N_EPOCHS, BATCH_SIZE, LR,
     LAMBDA_EWC_Q, LAMBDA_EWC_C, REHEARSAL_RATIO, N_SEEDS, TASKS, DEVICE,
     COLORS, FIGURES_DIR,
-    # Funciones
+    # Functions
     load_split_mnist, run_method, cl_metrics,
-    # Figuras
+    # Figures
     fig_cl_metrics_ci, fig_acc_matrix, fig_acc_evolution,
     fig_forgetting, fig_radar, fig_summary_table,
     fig_architecture, fig_circuit_diagram, fig_mnist_tasks,
@@ -66,7 +66,7 @@ RESULTS_DIR.mkdir(exist_ok=True)
 METHODS = ["Classical Naive", "Classical EWC",
            "Quantum Naive", "Quantum EWC", "QTCL"]
 
-# Valores de ablación (coinciden con los del paper)
+# Ablation values (match those in the paper)
 LAMBDA_SWEEP    = [50, 100, 200, 500, 1000, 2000]
 REHEARSAL_SWEEP = [0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4]
 
@@ -86,7 +86,7 @@ def _print_header(title: str):
 def _save_json(data: dict, path: Path):
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
-    print(f"  Guardado: {path}")
+    print(f"  Saved: {path}")
 
 
 def _load_json(path: Path) -> dict:
@@ -94,14 +94,14 @@ def _load_json(path: Path) -> dict:
         return json.load(f)
 
 
-# ── Modo: experimento principal ───────────────────────────────────────────────
+# ── Mode: main experiment ─────────────────────────────────────────────────────
 
 def run_main(seed: int = None):
-    """Experimento principal: 5 métodos, N_SEEDS seeds (o uno si seed≠None)."""
+    """Main experiment: 5 methods, N_SEEDS seeds (or one if seed is not None)."""
     seeds = [seed] if seed is not None else list(range(N_SEEDS))
     _print_header(
-        f"QTCL QUANTICS — Experimento principal\n"
-        f"Seeds: {seeds} | Métodos: {len(METHODS)} | Tareas: {len(TASKS)}\n"
+        f"QTCL QUANTICS — Main experiment\n"
+        f"Seeds: {seeds} | Methods: {len(METHODS)} | Tasks: {len(TASKS)}\n"
         f"λ_Q={LAMBDA_EWC_Q} λ_C={LAMBDA_EWC_C} ρ={REHEARSAL_RATIO} "
         f"epochs={N_EPOCHS} lr={LR}"
     )
@@ -122,8 +122,8 @@ def run_main(seed: int = None):
             print(f"    AA={mets['AA']:.4f}  BWT={mets['BWT']:+.4f}  "
                   f"FWT={mets['FWT']:+.4f}  F={mets['F']:.4f}")
 
-    # Imprimir tabla resumen
-    print(f"\n{'Método':22s}  {'AA':>10s}  {'BWT':>10s}  {'FWT':>10s}  {'F':>10s}")
+    # Print summary table
+    print(f"\n{'Method':22s}  {'AA':>10s}  {'BWT':>10s}  {'FWT':>10s}  {'F':>10s}")
     print("-" * 70)
     for m in METHODS:
         aa  = [x["AA"]  for x in all_metrics[m]]
@@ -136,9 +136,9 @@ def run_main(seed: int = None):
               f"{np.mean(fwt):+.3f}±{np.std(fwt):.3f}  "
               f"{np.mean(f):.3f}±{np.std(f):.3f}")
 
-    # Guardar resultados
+    # Save results
     if seed is not None:
-        # Modo array: guardar resultado del seed individual
+        # Array mode: save result for the individual seed
         out = {
             m: {
                 "seed":  seed,
@@ -152,7 +152,7 @@ def run_main(seed: int = None):
         }
         _save_json(out, RESULTS_DIR / f"seed_{seed}_main.json")
     else:
-        # Modo completo: guardar resumen agregado
+        # Full mode: save aggregated summary
         out = {
             m: {
                 "AA_mean":  float(np.mean([x["AA"]  for x in all_metrics[m]])),
@@ -169,17 +169,17 @@ def run_main(seed: int = None):
         }
         _save_json(out, RESULTS_DIR / "quantics_main.json")
 
-        # Generar figuras del experimento principal
-        print("\n── Figuras ──────────────────────────────")
+        # Generate figures for the main experiment
+        print("\n── Figures ──────────────────────────────")
         tasks_demo, _ = load_split_mnist(seed=42)
         fig_mnist_tasks(tasks_demo)
         fig_architecture()
         try:
             fig_circuit_diagram()
         except Exception as e:
-            print(f"  → vqc_circuit (omitido: {e})")
+            print(f"  → vqc_circuit (skipped: {e})")
 
-        # Figuras que necesitan datos por seed
+        # Figures that need per-seed data
         acc_dict_mean = {
             m: np.mean(all_accs[m], axis=0) for m in METHODS
         }
@@ -198,18 +198,18 @@ def run_main(seed: int = None):
         }
         fig_radar(metrics_mean)
         fig_summary_table(metrics_mean)
-        print("\nFiguras guardadas en figures/")
+        print("\nFigures saved in figures/")
 
     return all_accs, all_metrics
 
 
-# ── Modo: ablación lambda ─────────────────────────────────────────────────────
+# ── Mode: lambda ablation ─────────────────────────────────────────────────────
 
 def run_ablation_lambda(n_seeds: int = 2):
-    """Barre λ_Q con método QTCL completo, 2 seeds."""
+    """Sweeps λ_Q with full QTCL method, 2 seeds."""
     _print_header(
-        f"Ablación λ_Q — valores: {LAMBDA_SWEEP}\n"
-        f"Método: QTCL | Seeds: {n_seeds}"
+        f"Ablation λ_Q — values: {LAMBDA_SWEEP}\n"
+        f"Method: QTCL | Seeds: {n_seeds}"
     )
 
     import qtcl_v6_experiment as mod
@@ -228,13 +228,13 @@ def run_ablation_lambda(n_seeds: int = 2):
         results[str(lam)] = {"AA": m, "AA_std": std}
         print(f"    AA = {m:.4f} ± {std:.4f}")
 
-    # Restaurar valor original
+    # Restore original value
     mod.LAMBDA_EWC_Q = LAMBDA_EWC_Q
 
     out_path = RESULTS_DIR / "ablation_lambda.json"
     _save_json({"lambda": results}, out_path)
 
-    # Figura
+    # Figure
     _fig_ablation(
         x_vals=LAMBDA_SWEEP,
         y_means=[results[str(v)]["AA"]     for v in LAMBDA_SWEEP],
@@ -250,10 +250,10 @@ def run_ablation_lambda(n_seeds: int = 2):
 
 
 def run_ablation_rehearsal(n_seeds: int = 2):
-    """Barre ρ con método QTCL completo, 2 seeds."""
+    """Sweeps ρ with full QTCL method, 2 seeds."""
     _print_header(
-        f"Ablación ρ — valores: {REHEARSAL_SWEEP}\n"
-        f"Método: QTCL | Seeds: {n_seeds}"
+        f"Ablation ρ — values: {REHEARSAL_SWEEP}\n"
+        f"Method: QTCL | Seeds: {n_seeds}"
     )
 
     import qtcl_v6_experiment as mod
@@ -272,13 +272,13 @@ def run_ablation_rehearsal(n_seeds: int = 2):
         results[str(rho)] = {"AA": m, "AA_std": std}
         print(f"    AA = {m:.4f} ± {std:.4f}")
 
-    # Restaurar valor original
+    # Restore original value
     mod.REHEARSAL_RATIO = REHEARSAL_RATIO
 
     out_path = RESULTS_DIR / "ablation_rehearsal.json"
     _save_json({"rehearsal": results}, out_path)
 
-    # Figura
+    # Figure
     _fig_ablation(
         x_vals=REHEARSAL_SWEEP,
         y_means=[results[str(v)]["AA"]     for v in REHEARSAL_SWEEP],
@@ -317,30 +317,30 @@ def _fig_ablation(x_vals, y_means, y_stds, xlabel, ylabel, title,
     print(f"  → {fname}")
 
 
-# ── Modo: generar figuras desde JSON ─────────────────────────────────────────
+# ── Mode: generate figures from JSON ─────────────────────────────────────────
 
 def run_figures():
-    """Genera todas las figuras a partir de los JSONs guardados."""
-    _print_header("Generando figuras desde resultados guardados")
+    """Generates all figures from saved JSON files."""
+    _print_header("Generating figures from saved results")
 
     main_path = RESULTS_DIR / "quantics_main.json"
     if not main_path.exists():
-        print(f"[ERROR] {main_path} no encontrado. Ejecuta --mode main primero.")
+        print(f"[ERROR] {main_path} not found. Run --mode main first.")
         sys.exit(1)
 
     data = _load_json(main_path)
-    print(f"  Métodos en results: {list(data.keys())}")
+    print(f"  Methods in results: {list(data.keys())}")
 
-    # Figuras que no necesitan datos crudos
+    # Figures that do not need raw data
     tasks_demo, _ = load_split_mnist(seed=42)
     fig_mnist_tasks(tasks_demo)
     fig_architecture()
     try:
         fig_circuit_diagram()
     except Exception as e:
-        print(f"  → vqc_circuit (omitido: {e})")
+        print(f"  → vqc_circuit (skipped: {e})")
 
-    # Figura de métricas desde medias/std guardadas
+    # Metrics figure from saved means/std
     metrics_mean = {
         m: {
             "AA":  data[m]["AA_mean"],
@@ -353,7 +353,7 @@ def run_figures():
     fig_radar(metrics_mean)
     fig_summary_table(metrics_mean)
 
-    # Figuras de ablación si existen
+    # Ablation figures if they exist
     for fname, key in [("ablation_lambda", "lambda"),
                        ("ablation_rehearsal", "rehearsal")]:
         path = RESULTS_DIR / f"{fname}.json"
@@ -371,32 +371,32 @@ def run_figures():
                           fname=fname, vline=vline,
                           xscale="log" if key == "lambda" else None)
 
-    print("\nFiguras guardadas en figures/")
+    print("\nFigures saved in figures/")
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def parse_args():
     p = argparse.ArgumentParser(
-        description="QTCL QUANTICS 2026 — Experimentos para Hércules HPC"
+        description="QTCL QUANTICS 2026 — Experiments for Hercules HPC"
     )
     p.add_argument(
         "--mode",
         choices=["main", "ablation_lambda", "ablation_rehearsal", "figures"],
         required=True,
-        help="Modo de ejecución",
+        help="Execution mode",
     )
     p.add_argument(
         "--seed",
         type=int,
         default=None,
-        help="Seed específico (solo para --mode main, usado en array jobs)",
+        help="Specific seed (only for --mode main, used in array jobs)",
     )
     p.add_argument(
         "--abl_seeds",
         type=int,
         default=2,
-        help="Número de seeds para la ablación (default: 2)",
+        help="Number of seeds for ablation (default: 2)",
     )
     return p.parse_args()
 

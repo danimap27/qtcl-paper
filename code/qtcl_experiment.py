@@ -1,27 +1,27 @@
 """
 Quantum Transfer Continual Learning (QTCL) — v5 (QKE + Backbone)
 =================================================================
-Compara métodos CL cuánticos con y sin backbone clásico preentrenado.
+Compares CL quantum methods with and without a pretrained classical backbone.
 
-Backbone: MLP (32→4) preentrenado en tarea 0, congelado para tareas 1-3.
-         Actúa como extractor de features de propósito general (transfer learning).
+Backbone: MLP (32→4) pretrained on task 0, frozen for tasks 1-3.
+         Acts as a general-purpose feature extractor (transfer learning).
 
-Métodos:
-  - Naive FT:              QKE-SVM en tarea actual (olvida)
-  - Naive FT + Backbone:   ídem con features del backbone
-  - QEWC:                  joint training con decaimiento de pesos
-  - QTCL (proposed):       QKE + rehearsal 30% (sin backbone)
-  - QTCL + Backbone:       QKE + rehearsal 30% + backbone preentrenado [PROPUESTO]
-  - Classical SVM:         RBF-SVM joint training (baseline superior)
+Methods:
+  - Naive FT:              QKE-SVM on current task (forgets)
+  - Naive FT + Backbone:   same with backbone features
+  - QEWC:                  joint training with weight decay
+  - QTCL (proposed):       QKE + rehearsal 30% (no backbone)
+  - QTCL + Backbone:       QKE + rehearsal 30% + pretrained backbone [PROPOSED]
+  - Classical SVM:         RBF-SVM joint training (upper baseline)
 
 IBM Quantum Runtime:
-  Configura variables de entorno para ejecutar en hardware real IBM:
+  Set environment variables to run on real IBM hardware:
     export IBM_QUANTUM=true
-    export IBM_QUANTUM_TOKEN=<tu_token_de_ibm_quantum>
-    export IBM_BACKEND=ibm_brisbane   # o cualquier backend disponible
+    export IBM_QUANTUM_TOKEN=<your_ibm_quantum_token>
+    export IBM_BACKEND=ibm_brisbane   # or any available backend
 
-Métricas CL: AA, BWT, FWT, Forgetting.
-Compatible con Qiskit 2.3.1 / qiskit-machine-learning 0.9.0
+CL Metrics: AA, BWT, FWT, Forgetting.
+Compatible with Qiskit 2.3.1 / qiskit-machine-learning 0.9.0
 """
 
 import os
@@ -52,15 +52,15 @@ FIGURES_DIR = Path(__file__).parent.parent / "figures"
 FIGURES_DIR.mkdir(exist_ok=True)
 np.random.seed(42)
 
-# ─── Configuración ────────────────────────────────────────────────────────────
+# ─── Configuration ────────────────────────────────────────────────────────────
 
 N_QUBITS  = 4
 FM_REPS   = 2
 N_TRAIN   = 40
 N_TEST    = 15
-CLASS_SEP = 2.0      # Ligeramente más difícil que v4 para mostrar ventaja del backbone
+CLASS_SEP = 2.0      # Slightly harder than v4 to show backbone advantage
 
-# IBM Quantum Runtime (opcional — para hardware real)
+# IBM Quantum Runtime (optional — for real hardware)
 USE_IBM_RUNTIME = os.getenv('IBM_QUANTUM', 'false').lower() == 'true'
 IBM_TOKEN       = os.getenv('IBM_QUANTUM_TOKEN', '')
 IBM_BACKEND     = os.getenv('IBM_BACKEND', 'ibm_brisbane')
@@ -86,31 +86,31 @@ sns.set_theme(style="whitegrid", font_scale=1.15)
 plt.rcParams.update({'font.family': 'DejaVu Sans', 'figure.dpi': 150})
 
 
-# ─── IBM Runtime — sampler factory ───────────────────────────────────────────
+# ─── IBM Runtime — sampler factory ────────────────────────────────────────────
 
 def build_sampler():
-    """Devuelve sampler local o IBM Runtime según configuración."""
+    """Returns local sampler or IBM Runtime based on configuration."""
     if USE_IBM_RUNTIME:
-        print("  [IBM Runtime] Conectando al backend IBM Quantum...")
+        print("  [IBM Runtime] Connecting to IBM Quantum backend...")
         try:
             from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2 as IBMSampler
             svc = QiskitRuntimeService(channel='ibm_quantum', token=IBM_TOKEN)
             backend = svc.backend(IBM_BACKEND)
-            print(f"  [IBM Runtime] Backend: {IBM_BACKEND} ({backend.status().pending_jobs} jobs pendientes)")
+            print(f"  [IBM Runtime] Backend: {IBM_BACKEND} ({backend.status().pending_jobs} pending jobs)")
             return IBMSampler(backend)
         except Exception as e:
-            print(f"  [IBM Runtime] ERROR: {e} — usando simulador local")
-    return None  # None → FidelityQuantumKernel usa StatevectorSampler por defecto
+            print(f"  [IBM Runtime] ERROR: {e} — using local simulator")
+    return None  # None → FidelityQuantumKernel uses StatevectorSampler by default
 
 
-_GLOBAL_SAMPLER = None   # Inicializado en main()
+_GLOBAL_SAMPLER = None   # Initialized in main()
 
 
-# ─── Dataset ─────────────────────────────────────────────────────────────────
+# ─── Dataset ──────────────────────────────────────────────────────────────────
 
 def make_task(task_id: int):
     rng = np.random.RandomState(task_id * 17 + 31)
-    # Añadir rotación aleatoria por tarea → hace que el backbone sea más útil
+    # Add random rotation per task → makes backbone more useful
     angle = task_id * np.pi / 6
     rot = np.array([[np.cos(angle), -np.sin(angle), 0, 0],
                     [np.sin(angle),  np.cos(angle), 0, 0],
@@ -126,18 +126,18 @@ def make_task(task_id: int):
     cfg = configs[task_id % len(configs)]
     X, y = make_classification(n_samples=N_TRAIN + N_TEST, n_features=N_QUBITS,
                                 random_state=rng.randint(1000), **cfg)
-    X = X @ rot.T                         # rotación para heterogeneidad entre tareas
+    X = X @ rot.T                         # rotation for inter-task heterogeneity
     scaler = MinMaxScaler((0, np.pi))
     X = scaler.fit_transform(X)
     return train_test_split(X, y, test_size=N_TEST, random_state=42, stratify=y)
 
 
-# ─── Backbone clásico (transfer learning) ────────────────────────────────────
+# ─── Classical backbone (transfer learning) ───────────────────────────────────
 
 class ClassicalBackbone:
     """
-    Extractor de features MLP (32 → N_QUBITS) preentrenado en tarea 0.
-    Frozen durante toda la sesión CL → transfer learning hacia QKE.
+    MLP feature extractor (32 → N_QUBITS) pretrained on task 0.
+    Frozen throughout the CL session → transfer learning toward QKE.
     """
     def __init__(self, output_dim: int = N_QUBITS, hidden_dim: int = 32):
         self.output_dim = output_dim
@@ -146,9 +146,9 @@ class ClassicalBackbone:
         self._out_scaler = MinMaxScaler((0, np.pi))
 
     def pretrain(self, X: np.ndarray, y: np.ndarray) -> 'ClassicalBackbone':
-        """Preentrenar en tarea 0. Después, frozen."""
-        # Arquitectura (hidden_dim → output_dim) — output_dim = N_QUBITS = 4
-        # Con 40 muestras usamos L2 alto para no sobreajustar
+        """Pretrain on task 0. Afterwards, frozen."""
+        # Architecture (hidden_dim → output_dim) — output_dim = N_QUBITS = 4
+        # With 40 samples use high L2 to avoid overfitting
         self.mlp = MLPClassifier(
             hidden_layer_sizes=(self.hidden_dim, self.output_dim),
             activation='tanh', max_iter=1000, random_state=42,
@@ -160,32 +160,32 @@ class ClassicalBackbone:
         self._out_scaler.fit(np.clip(feats, -1, 1))
         self.fitted = True
         train_acc = self.mlp.score(X, y)
-        print(f"    [Backbone] preentrenado — acc tarea 0: {train_acc:.3f}")
+        print(f"    [Backbone] pretrained — task 0 acc: {train_acc:.3f}")
         return self
 
     def _extract(self, X: np.ndarray) -> np.ndarray:
-        """Forward pass hasta la penúltima capa (output_dim neuronas)."""
+        """Forward pass to the penultimate layer (output_dim neurons)."""
         acts = X
-        # coefs_[:-1] = todas las capas excepto la última (clasificación)
+        # coefs_[:-1] = all layers except the last (classification)
         for w, b in zip(self.mlp.coefs_[:-1], self.mlp.intercepts_[:-1]):
-            acts = np.tanh(acts @ w + b)               # tanh (igual que activation)
+            acts = np.tanh(acts @ w + b)               # tanh (same as activation)
         return acts                                      # shape (n, output_dim)
 
     def transform(self, X: np.ndarray) -> np.ndarray:
-        """Transforma features con backbone congelado → [0, π]."""
+        """Transforms features with frozen backbone → [0, π]."""
         feats = self._extract(X)
         # tanh ∈ (-1,1) → clamp → scale to [0, π]
         return self._out_scaler.transform(np.clip(feats, -1, 1))
 
 
-# ─── QKE helpers ─────────────────────────────────────────────────────────────
+# ─── QKE helpers ──────────────────────────────────────────────────────────────
 
 def make_feature_map(reps: int = FM_REPS) -> QuantumCircuit:
     return zz_feature_map(feature_dimension=N_QUBITS, reps=reps)
 
 
 def make_kernel(sampler=None) -> FidelityQuantumKernel:
-    """Crea FidelityQuantumKernel con sampler local o IBM Runtime."""
+    """Creates FidelityQuantumKernel with local or IBM Runtime sampler."""
     fm = make_feature_map()
     if sampler is not None:
         from qiskit_machine_learning.state_fidelities import ComputeUncompute
@@ -195,7 +195,7 @@ def make_kernel(sampler=None) -> FidelityQuantumKernel:
 
 
 class QKESVM:
-    """SVM con kernel cuántico precomputado. Soporta backbone opcional."""
+    """SVM with precomputed quantum kernel. Supports optional backbone."""
 
     def __init__(self, X_tr, y_tr, C=5.0, backbone=None):
         if backbone is not None:
@@ -216,7 +216,7 @@ class QKESVM:
 
 
 class QKESVMJoint:
-    """QKESVM entrenado sobre conjunto acumulado con pesos opcionales."""
+    """QKESVM trained on accumulated dataset with optional sample weights."""
 
     def __init__(self, X_tr, y_tr, C=5.0, sample_weight=None, backbone=None):
         if backbone is not None:
@@ -237,7 +237,7 @@ class QKESVMJoint:
 
 
 def fit_qke(X_tr, y_tr, backbone=None):
-    """Entrena QKESVM con búsqueda de C en {1, 5, 10}."""
+    """Trains QKESVM with C search over {1, 5, 10}."""
     best, best_score = None, -1.0
     for C in [1.0, 5.0, 10.0]:
         m = QKESVM(X_tr, y_tr, C=C, backbone=backbone)
@@ -250,13 +250,13 @@ def eval_all(model, tasks_te, T):
     return np.array([model.score(*tasks_te[j]) for j in range(T)])
 
 
-# ─── Métodos CL ──────────────────────────────────────────────────────────────
+# ─── CL Methods ───────────────────────────────────────────────────────────────
 
 def run_naive(tasks_tr, tasks_te, T, backbone=None, label="Naive FT"):
     print(f"  [{label}]")
     acc = np.zeros((T, T))
     for i, (X_tr, y_tr) in enumerate(tasks_tr):
-        print(f"    tarea {i+1}/{T}...", flush=True)
+        print(f"    task {i+1}/{T}...", flush=True)
         model = fit_qke(X_tr, y_tr, backbone=backbone)
         acc[i, :] = eval_all(model, tasks_te, T)
     return acc
@@ -268,7 +268,7 @@ def run_qewc(tasks_tr, tasks_te, T, backbone=None):
     X_hist, y_hist, w_hist = [], [], []
 
     for i, (X_tr, y_tr) in enumerate(tasks_tr):
-        print(f"    tarea {i+1}/{T}...", flush=True)
+        print(f"    task {i+1}/{T}...", flush=True)
         w_hist = [w * 0.65 for w in w_hist]
         X_hist.append(X_tr); y_hist.append(y_tr)
         w_hist.append(np.ones(len(X_tr)))
@@ -288,13 +288,13 @@ def run_qewc(tasks_tr, tasks_te, T, backbone=None):
 
 
 def run_qtcl(tasks_tr, tasks_te, T, backbone=None, rho=0.30, label="QTCL (proposed)"):
-    """QTCL: QKE + rehearsal rho%. Con backbone opcional."""
+    """QTCL: QKE + rehearsal rho%. With optional backbone."""
     print(f"  [{label}]")
     acc       = np.zeros((T, T))
     rehearsal = []
 
     for i, (X_tr, y_tr) in enumerate(tasks_tr):
-        print(f"    tarea {i+1}/{T}...", flush=True)
+        print(f"    task {i+1}/{T}...", flush=True)
         if rehearsal:
             Xr = np.vstack([X_tr] + [r[0] for r in rehearsal])
             yr = np.concatenate([y_tr] + [r[1] for r in rehearsal])
@@ -319,7 +319,7 @@ def run_classical(tasks_tr, tasks_te, T):
     acc          = np.zeros((T, T))
     X_all, y_all = [], []
     for i, (X_tr, y_tr) in enumerate(tasks_tr):
-        print(f"    tarea {i+1}/{T}...", flush=True)
+        print(f"    task {i+1}/{T}...", flush=True)
         X_all.append(X_tr); y_all.append(y_tr)
         clf = SVC(kernel='rbf', C=10, gamma='scale', random_state=42)
         clf.fit(np.vstack(X_all), np.concatenate(y_all))
@@ -327,7 +327,7 @@ def run_classical(tasks_tr, tasks_te, T):
     return acc
 
 
-# ─── Métricas ────────────────────────────────────────────────────────────────
+# ─── Metrics ──────────────────────────────────────────────────────────────────
 
 def cl_metrics(acc):
     T   = acc.shape[0]
@@ -339,7 +339,7 @@ def cl_metrics(acc):
     return {'AA': AA, 'BWT': BWT, 'FWT': FWT, 'F': F}
 
 
-# ─── Figuras ─────────────────────────────────────────────────────────────────
+# ─── Figures ──────────────────────────────────────────────────────────────────
 
 def _c(name):
     return COLORS.get(METHOD_LABELS.get(name, name.lower().replace(' ', '_')), '#607D8B')
@@ -372,7 +372,7 @@ def fig_circuit():
     f = qc.draw(output='mpl', fold=40, scale=0.7)
     f.suptitle(
         f'QTCL Feature Map: ZZFeatureMap(n={N_QUBITS}, reps={FM_REPS})\n'
-        f'Quantum kernel used in SVM-QKE (simulador / IBM Runtime)',
+        f'Quantum kernel used in SVM-QKE (simulator / IBM Runtime)',
         fontweight='bold', fontsize=10)
     for ext in ('pdf', 'png'):
         f.savefig(FIGURES_DIR / f'circuit_diagram.{ext}', bbox_inches='tight')
@@ -381,7 +381,7 @@ def fig_circuit():
 
 
 def fig_backbone_architecture():
-    """Diagrama del pipeline con backbone."""
+    """Pipeline diagram with backbone."""
     fig, ax = plt.subplots(figsize=(12, 3))
     ax.axis('off')
 
@@ -407,12 +407,12 @@ def fig_backbone_architecture():
                     xycoords='axes fraction', textcoords='axes fraction',
                     arrowprops=dict(arrowstyle='->', lw=1.5, color='#37474F'))
 
-    ax.text(0.28, 0.05, '← preentrenado en T0, congelado →', ha='center',
+    ax.text(0.28, 0.05, '← pretrained on T0, frozen →', ha='center',
             fontsize=8, color='#E65100', transform=ax.transAxes)
-    ax.text(0.65, 0.05, '← kernel cuántico (local / IBM Quantum) →', ha='center',
+    ax.text(0.65, 0.05, '← quantum kernel (local / IBM Quantum) →', ha='center',
             fontsize=8, color='#1B5E20', transform=ax.transAxes)
 
-    ax.set_title('QTCL + Backbone: Pipeline de Transfer Learning Cuántico',
+    ax.set_title('QTCL + Backbone: Quantum Transfer Learning Pipeline',
                  fontweight='bold', fontsize=12, pad=10)
     plt.tight_layout()
     for ext in ('pdf', 'png'):
@@ -496,7 +496,7 @@ def fig_cl_metrics(all_metrics):
 
 
 def fig_backbone_comparison(all_metrics):
-    """Comparativa directa: con backbone vs sin backbone."""
+    """Direct comparison: with backbone vs without backbone."""
     pairs = [
         ('Naive FT', 'Naive FT + Backbone'),
         ('QTCL (proposed)', 'QTCL + Backbone'),
@@ -511,15 +511,15 @@ def fig_backbone_comparison(all_metrics):
     for ax, metric, label in zip(axes, metrics_order, labels):
         v_no  = [all_metrics[p[0]][metric] for p in pairs]
         v_bb  = [all_metrics[p[1]][metric] for p in pairs]
-        ax.bar(x - w/2, v_no, w, label='Sin backbone', color='#90A4AE', edgecolor='white')
-        ax.bar(x + w/2, v_bb, w, label='Con backbone', color='#0D47A1', edgecolor='white')
+        ax.bar(x - w/2, v_no, w, label='Without backbone', color='#90A4AE', edgecolor='white')
+        ax.bar(x + w/2, v_bb, w, label='With backbone', color='#0D47A1', edgecolor='white')
         ax.set_xticks(x)
         ax.set_xticklabels([p[0] for p in pairs], rotation=15, ha='right', fontsize=9)
         ax.set_title(label, fontweight='bold')
         ax.axhline(0, color='black', lw=0.8, ls='--', alpha=0.4)
         ax.legend(fontsize=8)
 
-    plt.suptitle('Impacto del Backbone Clásico Preentrenado en Métricas CL',
+    plt.suptitle('Impact of Pretrained Classical Backbone on CL Metrics',
                  fontsize=13, fontweight='bold')
     plt.tight_layout()
     for ext in ('pdf', 'png'):
@@ -617,7 +617,7 @@ def fig_summary_table(all_metrics):
         if m == 'QTCL + Backbone':
             for j in range(5):
                 tbl[i+1, j].set_facecolor('#E3F2FD')
-    ax.set_title('Summary of CL Metrics (Simulador local / IBM Runtime)',
+    ax.set_title('Summary of CL Metrics (Local simulator / IBM Runtime)',
                  fontweight='bold', fontsize=12, pad=12)
     plt.tight_layout()
     for ext in ('pdf', 'png'):
@@ -637,15 +637,15 @@ def main():
     print(f"{'='*70}")
     print(f"Qubits={N_QUBITS} | ZZFeatureMap(reps={FM_REPS}) | SVM-QKE")
     print(f"Train={N_TRAIN} | Test={N_TEST} | class_sep={CLASS_SEP}")
-    mode = f"IBM Quantum ({IBM_BACKEND})" if USE_IBM_RUNTIME else "Simulador local (StatevectorSampler)"
+    mode = f"IBM Quantum ({IBM_BACKEND})" if USE_IBM_RUNTIME else "Local simulator (StatevectorSampler)"
     print(f"Backend: {mode}")
     print(f"{'='*70}")
 
-    # Inicializar sampler (IBM o local)
+    # Initialize sampler (IBM or local)
     _GLOBAL_SAMPLER = build_sampler()
 
-    # Tareas
-    print("\n[1] Generando tareas...")
+    # Tasks
+    print("\n[1] Generating tasks...")
     tasks_tr, tasks_te = [], []
     for t in range(T):
         Xtr, Xte, ytr, yte = make_task(t)
@@ -653,21 +653,21 @@ def main():
         tasks_te.append((Xte, yte))
         print(f"  T{t+1}: {len(Xtr)} train | {len(Xte)} test")
 
-    # Backbone: preentrenar en tarea 0 (frozen para el resto)
-    print("\n[2] Preentrenando backbone (tarea 0)...")
+    # Backbone: pretrain on task 0 (frozen for the rest)
+    print("\n[2] Pretraining backbone (task 0)...")
     backbone = ClassicalBackbone(output_dim=N_QUBITS, hidden_dim=32)
     backbone.pretrain(*tasks_tr[0])
 
-    # Figuras previas
-    print("\n[3] Figuras previas...")
+    # Preliminary figures
+    print("\n[3] Preliminary figures...")
     fig_task_datasets(tasks_tr, T)
     fig_circuit()
     fig_backbone_architecture()
-    print("  → kernel_analysis (calculando...)")
+    print("  → kernel_analysis (computing...)")
     fig_kernel_matrix(tasks_tr)
 
-    # Experimentos
-    print("\n[4] Experimentos...")
+    # Experiments
+    print("\n[4] Experiments...")
     mat_naive     = run_naive(tasks_tr, tasks_te, T, backbone=None,     label="Naive FT")
     mat_naive_bb  = run_naive(tasks_tr, tasks_te, T, backbone=backbone,  label="Naive FT + Backbone")
     mat_qewc      = run_qewc(tasks_tr, tasks_te, T,  backbone=None)
@@ -684,8 +684,8 @@ def main():
         'Classical SVM':       mat_classical,
     }
 
-    # Métricas
-    print("\n[5] Métricas...")
+    # Metrics
+    print("\n[5] Metrics...")
     all_metrics = {}
     for name, mat in matrices.items():
         m = cl_metrics(mat)
@@ -693,8 +693,8 @@ def main():
         print(f"  {name:25s}  AA={m['AA']:.4f}  BWT={m['BWT']:+.4f}"
               f"  FWT={m['FWT']:+.4f}  F={m['F']:.4f}")
 
-    # Figuras
-    print("\n[6] Figuras...")
+    # Figures
+    print("\n[6] Figures...")
     fig_acc_matrix(matrices, T)
     fig_cl_metrics(all_metrics)
     fig_backbone_comparison(all_metrics)
@@ -708,9 +708,9 @@ def main():
     print("  → results.csv")
 
     print(f"\n{'='*70}")
-    print("Completado.")
+    print("Completed.")
     if USE_IBM_RUNTIME:
-        print(f"Hardware utilizado: {IBM_BACKEND}")
+        print(f"Hardware used: {IBM_BACKEND}")
     print(f"{'='*70}\n")
     return all_metrics, matrices
 
