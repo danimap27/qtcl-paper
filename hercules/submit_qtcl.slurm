@@ -9,7 +9,7 @@
 #SBATCH --mem=32G
 #SBATCH --partition=cpu
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=danitanke02@gmail.com
+#SBATCH --mail-user=dmarper2@upo.es
 
 # ── QTCL v6 — experimento completo (3 seeds × 5 métodos × 5 tareas) ──────────
 # Lanzar con: sbatch hercules/submit_qtcl.slurm

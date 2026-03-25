@@ -10,7 +10,7 @@
 #SBATCH --partition=standard
 #SBATCH --array=0-2
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=danitanke02@gmail.com
+#SBATCH --mail-user=dmarper2@upo.es
 
 # ── QTCL QUANTICS 2026 — seeds en paralelo (array job) ────────────────────────
 # Lanza 3 jobs simultáneos, uno por seed. Más rápido que el job único.

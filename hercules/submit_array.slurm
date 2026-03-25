@@ -10,7 +10,7 @@
 #SBATCH --partition=cpu
 #SBATCH --array=0-2          # 3 seeds en paralelo
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=danitanke02@gmail.com
+#SBATCH --mail-user=dmarper2@upo.es
 
 # ── Job Array: 1 seed por nodo, todos en paralelo ─────────────────────────────
 # Lanzar con: sbatch hercules/submit_array.slurm

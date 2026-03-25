@@ -9,7 +9,7 @@
 #SBATCH --mem=48G
 #SBATCH --partition=standard
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=danitanke02@gmail.com
+#SBATCH --mail-user=dmarper2@upo.es
 
 # ── QTCL QUANTICS 2026 — experimento completo ─────────────────────────────────
 # Ejecuta: experimento principal (3 seeds × 5 métodos) + ablación (λ + ρ)
