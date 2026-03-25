@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24
 #SBATCH --mem=48G
-#SBATCH --partition=cpu
+#SBATCH --partition=standard
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=danitanke02@gmail.com
 
@@ -29,8 +29,8 @@ echo "Inicio: $(date)"
 echo "========================================================"
 
 module purge
-source ~/miniconda3/etc/profile.d/conda.sh
-conda activate qtcl
+module load Miniconda3
+source activate qtcl
 
 mkdir -p logs figures results data
 

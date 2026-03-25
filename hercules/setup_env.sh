@@ -9,12 +9,11 @@ echo "=== Configurando entorno QTCL en Hercules ==="
 
 # Módulos
 module purge
-module load python/3.10
-module load miniconda/23.5
+module load Miniconda3
 
 # Crear entorno conda
-conda create -n qtcl-env python=3.10 -y
-source activate qtcl-env
+conda create -n qtcl python=3.11 -y
+source activate qtcl
 
 # Instalar dependencias
 pip install --upgrade pip
