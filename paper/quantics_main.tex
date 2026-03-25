@@ -32,8 +32,8 @@
 \definecolor{taskorange}{RGB}{230,81,0}
 \definecolor{measgray}{RGB}{66,66,66}
 
-\title{\textbf{Quantum Continual Learning via Fisher EWC\\
-and Experience Replay in Variational Quantum Circuits}}
+\title{Quantum Continual Learning via Fisher EWC\\
+and Experience Replay in Variational Quantum Circuits}
 
 \author{D.~Mart\'{\i}n-P\'erez\textsuperscript{1} \and
         F.~Rodr\'{\i}guez-D\'{\i}az\textsuperscript{1} \and
@@ -65,7 +65,7 @@ a synergistic anti-forgetting effect that exploits the geometry of quantum
 Hilbert space.
 \end{abstract}
 
-\noindent\textbf{Keywords:} Quantum Machine Learning, Continual Learning,
+\noindent\textit{Keywords:} Quantum Machine Learning, Continual Learning,
 Variational Quantum Circuits, Elastic Weight Consolidation, Barren Plateaus,
 NISQ.
 
@@ -113,19 +113,21 @@ This paper proposes QTCL, a hybrid framework that addresses these problems by
 combining: (i) QFIM-based EWC to protect quantum parameters geometrically, and
 (ii) experience replay to provide gradient anchors that prevent parameter drift
 into barren plateau regions.
-The contributions of this work are:
-\begin{enumerate}
-  \item \textbf{QTCL framework}: an end-to-end hybrid model with MLP encoder,
-        VQC with task-shared and task-specific parameter banks, QFIM-based EWC,
-        and experience replay, evaluated with statistical rigour (3~seeds, 95\%~CI).
-  \item \textbf{Exact QFIM computation}: Fisher weights are computed via adjoint
-        differentiation (PennyLane \texttt{lightning.qubit}), providing a
-        geometrically principled quantum regularizer.
-  \item \textbf{Empirical result}: $+21.3$\,pp average accuracy and $3.3\times$
-        less forgetting over the best classical baseline on Split-MNIST.
-  \item \textbf{Ablation study}: systematic analysis of EWC strength $\lambda$
-        and rehearsal ratio $\rho$, establishing the optimal operating regime.
-\end{enumerate}
+The contributions of this work are as follows.
+
+\noindent\textit{QTCL framework.} An end-to-end hybrid model with MLP encoder,
+VQC with task-shared and task-specific parameter banks, QFIM-based EWC,
+and experience replay, evaluated with statistical rigour (3~seeds, 95\%~CI).
+
+\noindent\textit{Exact QFIM computation.} Fisher weights are computed via adjoint
+differentiation (PennyLane \texttt{lightning.qubit}), providing a
+geometrically principled quantum regularizer.
+
+\noindent\textit{Empirical result.} $+21.3$\,pp average accuracy and $3.3\times$
+less forgetting over the best classical baseline on Split-MNIST.
+
+\noindent\textit{Ablation study.} Systematic analysis of EWC strength $\lambda$
+and rehearsal ratio $\rho$, establishing the optimal operating regime.
 
 The rest of the paper is organized as follows.
 Section~\ref{sec:related} reviews related work.
@@ -140,7 +142,7 @@ Section~\ref{sec:conclusion} gives the conclusions.
 This section covers the three areas of related work: continual learning
 methods, VQC-based machine learning, and quantum continual learning.
 
-\noindent\textbf{Continual learning.}
+\noindent\textit{Continual learning.}
 Kirkpatrick et al.~\cite{kirkpatrick2017overcoming} introduced EWC, which adds
 a regularization term to the loss that penalizes changes to parameters
 weighted by the diagonal of the Fisher Information Matrix (FIM).
@@ -151,7 +153,7 @@ stores class exemplars and combines classification with representation learning.
 Surveys on transfer learning~\cite{Pan2010,Zhuang2021} provide broader
 context on how knowledge from prior tasks can be reused.
 
-\noindent\textbf{Variational quantum circuits.}
+\noindent\textit{Variational quantum circuits.}
 Cerezo et al.~\cite{cerezo2021variational} review VQAs, covering their design,
 training, and applications.
 Jerbi et al.~\cite{jerbi2023beyond} show that VQC models can go beyond kernel
@@ -168,7 +170,7 @@ mitigation strategies.
 Wang et al.~\cite{wang2021noise} show that hardware noise can induce barren
 plateaus independent of circuit depth.
 
-\noindent\textbf{Quantum continual learning.}
+\noindent\textit{Quantum continual learning.}
 Chen~\cite{chen2022quantumcl} studied catastrophic forgetting in VQC-based
 classifiers and proposed regularization strategies adapted to the quantum setting.
 The present work differs in three ways: it computes the QFIM exactly via adjoint
@@ -446,7 +448,7 @@ Positive FWT means that training on prior tasks helped on future ones.
 \subsection{Experimental Setup}
 \label{subsec:setup}
 
-\noindent\textbf{Methods compared.}
+\noindent\textit{Methods compared.}
 Five methods are evaluated:
 (1)~\textit{Classical Naive}: MLP with fine-tuning and no anti-forgetting
 protection;
@@ -457,7 +459,7 @@ protection;
 All methods share the same encoder, Adam optimizer ($\eta=0.002$),
 batch size~16, and 25 training epochs per task.
 
-\noindent\textbf{Quantum backend.}
+\noindent\textit{Quantum backend.}
 All quantum experiments run on PennyLane \texttt{lightning.qubit}, a C++
 statevector simulator with adjoint differentiation.
 The \texttt{StronglyEntanglingLayers} template is used as the variational ansatz.
@@ -509,7 +511,7 @@ intervals, making the gap between QTCL and the baselines visible.
 
 Three patterns stand out from Table~\ref{tab:main} and Figure~\ref{fig:metrics}.
 
-\noindent\textbf{Rehearsal is the critical component.}
+\noindent\textit{Rehearsal is the critical component.}
 Quantum EWC alone (AA~$=0.613$) obtains similar performance to Classical EWC
 (AA~$=0.636$), with no significant benefit from the quantum regularizer.
 Adding rehearsal to the quantum model yields a $+0.236$ AA jump---the largest
@@ -517,7 +519,7 @@ single-component gain across all methods.
 This result supports the hypothesis that replay provides the gradient signals
 needed to keep parameters out of barren plateau regions.
 
-\noindent\textbf{Forgetting reduction.}
+\noindent\textit{Forgetting reduction.}
 QTCL reduces forgetting from 42.6\% (Classical EWC) to 13.0\%, a $3.3\times$
 absolute reduction as measured by Eq.~(\ref{eq:forgetting}).
 The accuracy matrix in Figure~\ref{fig:accmat} confirms this at task granularity:
@@ -535,12 +537,12 @@ whereas Classical EWC shows rapid diagonal decay.
   \label{fig:accmat}
 \end{figure}
 
-\noindent\textbf{Forward transfer.}
+\noindent\textit{Forward transfer.}
 QTCL achieves positive FWT ($+0.038$, Eq.~\ref{eq:fwt}), indicating that
 the shared Hilbert space geometry of the VQC generalizes to tasks not yet seen.
 All classical baselines have negative FWT.
 
-\noindent\textbf{Ablation study.}
+\noindent\textit{Ablation study.}
 Figure~\ref{fig:abl_lam} shows AA as a function of EWC strength
 $\lambda_Q \in \{50, 100, 200, 500, 1000, 2000\}$.
 Performance peaks at $\lambda_Q = 200$, which is lower than the classical
@@ -589,12 +591,15 @@ a $+21.3$\,pp accuracy gain and $3.3\times$ forgetting reduction against the
 best classical baseline.
 
 Three conclusions follow from the ablation study.
-First, rehearsal is the critical component: QFIM-based EWC alone gives no
+
+\noindent\textit{Rehearsal is the critical component.} QFIM-based EWC alone gives no
 benefit over Classical EWC, but its combination with rehearsal produces a
 large improvement.
-Second, the optimal quantum EWC strength ($\lambda_Q=200$) is lower than for
+
+\noindent\textit{Optimal regularization strength.} The optimal quantum EWC strength ($\lambda_Q=200$) is lower than for
 classical models, which reflects the compact VQC parameter space.
-Third, the synergy between QFIM-constrained EWC and rehearsal exceeds the
+
+\noindent\textit{Synergistic anti-forgetting effect.} The synergy between QFIM-constrained EWC and rehearsal exceeds the
 sum of their individual contributions.
 
 Limitations of this work include the small dataset scale (150 samples per
