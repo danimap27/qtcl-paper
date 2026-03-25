@@ -98,10 +98,10 @@ def load_split_mnist(seed: int = 42):
 
     if HAS_TORCHVISION:
         ds_tr = torchvision.datasets.MNIST(
-            root="/home/quantum-nas/qtcl-paper/data", train=True,
+            root="data/", train=True,
             download=True, transform=T.ToTensor())
         ds_te = torchvision.datasets.MNIST(
-            root="/home/quantum-nas/qtcl-paper/data", train=False,
+            root="data/", train=False,
             download=True, transform=T.ToTensor())
         X_tr = ds_tr.data.float().numpy() / 255.0      # (60000, 28, 28)
         y_tr = ds_tr.targets.numpy()

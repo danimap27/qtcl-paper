@@ -59,10 +59,10 @@ def load_split_mnist(seed=42):
     rng = np.random.RandomState(seed)
     if HAS_TORCHVISION:
         ds_tr = torchvision.datasets.MNIST(
-            root="/home/quantum-nas/qtcl-paper/data", train=True,
+            root="data/", train=True,
             download=True, transform=T.ToTensor())
         ds_te = torchvision.datasets.MNIST(
-            root="/home/quantum-nas/qtcl-paper/data", train=False,
+            root="data/", train=False,
             download=True, transform=T.ToTensor())
         X_tr = ds_tr.data.float().numpy()/255.; y_tr = ds_tr.targets.numpy()
         X_te = ds_te.data.float().numpy()/255.; y_te = ds_te.targets.numpy()
@@ -421,7 +421,7 @@ def main():
         else:
             serializable[k] = [(float(x),float(y),float(s)) for x,y,s in v]
 
-    with open("/home/quantum-nas/qtcl-paper/results_ablation.json","w") as f:
+    with open("results/ablation.json","w") as f:
         json.dump(serializable, f, indent=2)
     print("\n→ results_ablation.json")
 

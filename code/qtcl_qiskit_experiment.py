@@ -331,10 +331,10 @@ def load_split_mnist(seed: int = 42):
     rng = np.random.RandomState(seed)
     if HAS_TORCHVISION:
         ds_tr = torchvision.datasets.MNIST(
-            root="/home/quantum-nas/qtcl-paper/data", train=True,
+            root="data/", train=True,
             download=True, transform=T.ToTensor())
         ds_te = torchvision.datasets.MNIST(
-            root="/home/quantum-nas/qtcl-paper/data", train=False,
+            root="data/", train=False,
             download=True, transform=T.ToTensor())
         X_tr = ds_tr.data.float().numpy() / 255.0
         y_tr = ds_tr.targets.numpy()
@@ -597,7 +597,7 @@ def main():
     fig_qiskit_metrics(all_metrics, methods)
 
     # Cargar métricas PennyLane si existen para comparación
-    pl_summary_path = Path("/home/quantum-nas/qtcl-paper/results_summary.json")
+    pl_summary_path = Path("results/summary.json")
     if pl_summary_path.exists():
         with open(pl_summary_path) as f:
             pl_summary = json.load(f)
@@ -616,7 +616,7 @@ def main():
                    "std":  {k: float(np.std([x[k] for x in all_metrics[m]]))
                             for k in ["AA","BWT","FWT","F"]}}
                for m in methods}
-    out_path = Path("/home/quantum-nas/qtcl-paper/results_qiskit.json")
+    out_path = Path("results/qiskit.json")
     with open(out_path, "w") as f:
         json.dump(summary, f, indent=2)
     print(f"  → {out_path}")
