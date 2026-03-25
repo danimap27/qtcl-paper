@@ -31,9 +31,8 @@ echo "Inicio: $(date)"
 echo "========================================================"
 
 module purge
-module load python/3.10
-module load miniconda/23.5
-source activate qtcl-env
+module load Miniconda3/24.5.0
+conda activate qtcl
 
 mkdir -p logs figures results data
 
