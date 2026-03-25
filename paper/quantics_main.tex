@@ -501,12 +501,24 @@ intervals, making the gap between QTCL and the baselines visible.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.9\columnwidth]{../figures/cl_metrics.pdf}
-  \caption{CL metrics comparison (mean $\pm$ 95\% CI, $n=3$ seeds).
-           QTCL (dark blue) obtains the best values on all four metrics.
-           The gap between Quantum EWC and QTCL shows that rehearsal is the
-           critical component that activates the quantum advantage.}
-  \label{fig:metrics}
+  \begin{minipage}{\columnwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../figures/cl_metrics.pdf}
+    \caption{CL metrics comparison (mean $\pm$ 95\% CI, $n=3$ seeds).
+             QTCL (dark blue) obtains the best values on all four metrics.
+             The gap between Quantum EWC and QTCL shows that rehearsal is the
+             critical component that activates the quantum advantage.}
+    \label{fig:metrics}
+  \end{minipage}
+  \par\vspace{0.5cm}
+  \begin{minipage}{\columnwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../figures/ablation_lambda.pdf}
+    \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of EWC strength
+             $\lambda_Q$. The quantum optimum ($\lambda_Q=200$) is lower than
+             the classical one, reflecting the smaller VQC parameter space.}
+    \label{fig:abl_lam}
+  \end{minipage}
 \end{figure}
 
 Three patterns stand out from Table~\ref{tab:main} and Figure~\ref{fig:metrics}.
@@ -559,23 +571,11 @@ showing that a 25\% replay buffer is the best accuracy-efficiency operating poin
 
 \begin{figure}[t]
   \centering
-  \begin{minipage}{0.48\columnwidth}
-    \centering
-    \includegraphics[width=\linewidth]{../figures/ablation_lambda.pdf}
-    \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of EWC strength
-             $\lambda_Q$. The quantum optimum ($\lambda_Q=200$) is lower than
-             the classical one, reflecting the smaller VQC parameter space.}
-    \label{fig:abl_lam}
-  \end{minipage}
-  \hfill
-  \begin{minipage}{0.48\columnwidth}
-    \centering
-    \includegraphics[width=\linewidth]{../figures/ablation_rehearsal.pdf}
-    \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of rehearsal
-             ratio $\rho$. Performance reaches a plateau at $\rho=0.25$;
-             setting $\rho=0$ degrades to the Quantum EWC baseline.}
-    \label{fig:abl_rho}
-  \end{minipage}
+  \includegraphics[width=0.9\columnwidth]{../figures/ablation_rehearsal.pdf}
+  \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of rehearsal
+           ratio $\rho$. Performance reaches a plateau at $\rho=0.25$;
+           setting $\rho=0$ degrades to the Quantum EWC baseline.}
+  \label{fig:abl_rho}
 \end{figure}
 
 % ─── 5. Conclusions ───────────────────────────────────────────────────────────
