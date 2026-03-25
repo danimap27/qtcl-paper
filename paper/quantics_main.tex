@@ -21,9 +21,16 @@
 \usepackage{colortbl}
 \usepackage{hyperref}
 \usepackage[numbers,sort&compress]{natbib}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds,decorations.pathreplacing}
+\usepackage{quantikz}
 
 \definecolor{qtclblue}{RGB}{13,71,161}
 \definecolor{classicred}{RGB}{239,83,80}
+\definecolor{encgreen}{RGB}{46,125,50}
+\definecolor{sharedblue}{RGB}{21,101,192}
+\definecolor{taskorange}{RGB}{230,81,0}
+\definecolor{measgray}{RGB}{66,66,66}
 
 % ── For llncs camera-ready, remove the block above and use:
 %    \documentclass{llncs}
@@ -35,7 +42,11 @@
 \title{\textbf{Quantum Continual Learning via Fisher EWC\\
 and Experience Replay in Variational Quantum Circuits}}
 
-\author{Anonymous}
+\author{D.~Mart\'{\i}n-P\'erez\textsuperscript{1} \and
+        F.~Rodr\'{\i}guez-D\'{\i}az\textsuperscript{1} \and
+        D.~Guti\'errez-Avil\'es\textsuperscript{2} \and
+        A.~Troncoso\textsuperscript{1} \and
+        F.~Mart\'{\i}nez-\'Alvarez\textsuperscript{1}}
 \date{}
 
 \begin{document}
@@ -75,16 +86,20 @@ forgetting}~\cite{mccloskey1989,goodfellow2013empirical}.
 Classical mitigation strategies include regularization (EWC~\cite{kirkpatrick2017overcoming},
 SI~\cite{zenke2017continual}) and replay-based methods (iCaRL~\cite{Rebuffi2017}).
 
-Variational Quantum Circuits (VQCs)~\cite{cerezo2021variational} operate in an
+Variational Quantum Circuits (VQCs)~\cite{cerezo2021variational,jerbi2023beyond} operate in an
 exponentially large Hilbert space, yielding outputs bounded to $[-1,+1]$ and a
 natural Riemannian metric given by the \emph{Quantum Fisher Information Matrix}
 (QFIM)~\cite{haug2021}.
 Applying Fisher-based EWC to VQC parameters is therefore not merely a heuristic
 adaptation---it operates on a geometrically meaningful quantity intrinsic to
 the quantum parameter landscape.
-However, the \emph{barren plateau} phenomenon~\cite{mcclean2018barren} means
-that once parameters drift away from a previous solution, gradient vanishing
+However, the \emph{barren plateau} phenomenon~\cite{mcclean2018barren,larocca2024review}
+means that once parameters drift away from a previous solution, gradient vanishing
 makes recovery exponentially hard.
+Crucially, the connection between circuit expressibility and barren plateaus
+has been formalized~\cite{holmes2022connecting}: highly expressive ansätze
+such as \texttt{StronglyEntanglingLayers} are prone to concentration, motivating
+the compact 4-qubit design chosen in QTCL.
 We hypothesize that experience replay provides the gradient anchors necessary
 to counteract this effect.
 
@@ -169,15 +184,81 @@ $SU(2)$ rotations with all-to-all entanglement).
 Pauli-$Z$ expectations $[f_1,\ldots,f_{n_q}]$ feed a linear classifier.
 Default: $n_q=4$, $L_s=2$ shared + $L_t=1$ task layer ($36$ quantum parameters total).
 
+% ── Architecture diagram (TikZ) ────────────────────────────────────────────
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.9\columnwidth]{../figures/architecture.pdf}
-  \caption{QTCL architecture. MLP encoder (green) maps 784-dim inputs to a
-           4-dim latent space; $R_Y$ encoding embeds latents into 4 qubits;
-           \texttt{StronglyEntanglingLayers} with shared (blue) and task-specific
-           (orange) parameters implement the quantum representation; Pauli-$Z$
-           expectations feed a linear classifier.}
+  \begin{tikzpicture}[
+      node distance=0.4cm and 0.5cm,
+      blk/.style={rectangle, rounded corners=3pt, minimum height=0.9cm,
+                  text width=#1, align=center, font=\small, inner sep=3pt},
+      blk/.default=1.6cm,
+      arr/.style={-{Stealth[length=5pt]}, thick},
+    ]
+    \node[blk=1.2cm, draw=black!50, fill=black!8] (input)
+      {$\mathbf{x}$ \scriptsize MNIST};
+
+    \node[blk=2.4cm, draw=encgreen, fill=encgreen!12, right=of input] (mlp)
+      {\textbf{MLP Encoder} \scriptsize $784{\to}32{\to}n_q$};
+
+    \node[blk=1.5cm, draw=black!60, fill=yellow!15, right=of mlp] (enc)
+      {$R_Y(\pi z_i)$ \scriptsize angle enc.};
+
+    \node[blk=1.9cm, draw=sharedblue, fill=sharedblue!12, right=of enc] (shared)
+      {$U_\mathrm{SEL}(\boldsymbol\theta_s)$ \scriptsize shared $L_s{=}2$};
+
+    \node[blk=1.9cm, draw=taskorange, fill=taskorange!12, right=of shared] (task)
+      {$U_\mathrm{SEL}(\boldsymbol\theta_t^{(t)})$ \scriptsize task $L_t{=}1$};
+
+    \node[blk=1.2cm, draw=measgray, fill=measgray!10, right=of task] (meas)
+      {$\langle Z_i\rangle$};
+
+    \node[blk=1.4cm, draw=black!60, fill=black!8, right=of meas] (cls)
+      {\textbf{Linear} \scriptsize classifier};
+
+    \node[blk=0.8cm, draw=black!40, fill=white, right=of cls] (out)
+      {$\hat{y}$};
+
+    \draw[arr] (input) -- (mlp);
+    \draw[arr] (mlp)   -- node[above,font=\tiny]{$\mathbf{z}{\in}[-1,1]^{n_q}$} (enc);
+    \draw[arr] (enc)   -- (shared);
+    \draw[arr] (shared)-- (task);
+    \draw[arr] (task)  -- (meas);
+    \draw[arr] (meas)  -- (cls);
+    \draw[arr] (cls)   -- (out);
+
+    \begin{scope}[on background layer]
+      \node[draw=qtclblue, dashed, rounded corners=5pt, fill=qtclblue!5,
+            fit=(enc)(shared)(task)(meas),
+            label={[font=\footnotesize\color{qtclblue}]above:VQC ($n_q=4$ qubits)}]
+            {};
+    \end{scope}
+  \end{tikzpicture}
+  \caption{QTCL architecture. MLP encoder (green) compresses 784-dim inputs to
+           $n_q$-dim latent space; $R_Y$ angle encoding embeds into 4 qubits;
+           \texttt{StronglyEntanglingLayers} with shared (blue, $\boldsymbol\theta_s$)
+           and task-specific (orange, $\boldsymbol\theta_t^{(t)}$) parameters;
+           Pauli-$Z$ expectations feed a linear classifier.}
   \label{fig:arch}
+\end{figure}
+
+% ── VQC circuit diagram (quantikz) ─────────────────────────────────────────
+\begin{figure}[t]
+  \centering
+  \begin{quantikz}[row sep=0.35cm, column sep=0.45cm]
+    \lstick{$q_1$} & \gate{R_Y(\pi z_1)} &
+      \gate[4,style={fill=sharedblue!20,draw=sharedblue}]{U_\mathrm{SEL}^{(1)}(\boldsymbol\theta_s)} &
+      \gate[4,style={fill=sharedblue!20,draw=sharedblue}]{U_\mathrm{SEL}^{(2)}(\boldsymbol\theta_s)} &
+      \gate[4,style={fill=taskorange!20,draw=taskorange}]{U_\mathrm{SEL}^{}(\boldsymbol\theta_t^{(t)})} &
+      \meter{\langle Z\rangle} \\
+    \lstick{$q_2$} & \gate{R_Y(\pi z_2)} & & & & \meter{\langle Z\rangle} \\
+    \lstick{$q_3$} & \gate{R_Y(\pi z_3)} & & & & \meter{\langle Z\rangle} \\
+    \lstick{$q_4$} & \gate{R_Y(\pi z_4)} & & & & \meter{\langle Z\rangle}
+  \end{quantikz}
+  \caption{VQC circuit ($n_q=4$ qubits). $R_Y(\pi z_i)$ angle encoding; two
+           shared \texttt{StronglyEntanglingLayers} (blue, $\boldsymbol\theta_s$)
+           and one task-specific layer (orange, $\boldsymbol\theta_t^{(t)}$);
+           Pauli-$Z$ expectations as output features.}
+  \label{fig:circuit}
 \end{figure}
 
 \subsection{Fisher EWC for Hybrid Models}
@@ -380,8 +461,10 @@ and (iii) the synergy of QFIM-constrained EWC and rehearsal exceeds the
 sum of individual contributions.
 
 \textbf{Future work} will extend to Split-CIFAR-10 with barren-plateau
-mitigation, report real-hardware results via IBM Quantum Runtime
-(ZNE noise mitigation), and explore quantum generative rehearsal.
+mitigation strategies~\cite{larocca2024review},
+report real-hardware results via IBM Quantum Runtime
+(ZNE noise mitigation; noise-induced plateau effects~\cite{wang2021noise}
+are a key concern), and explore quantum generative rehearsal.
 
 % ─── References ───────────────────────────────────────────────────────────────
 \begin{thebibliography}{99}
@@ -437,6 +520,28 @@ C.~Finn, P.~Abbeel, and S.~Levine,
 Y.~LeCun, L.~Bottou, Y.~Bengio, and P.~Haffner,
 ``Gradient-based learning applied to document recognition,''
 \emph{Proceedings of the IEEE}, vol.~86, no.~11, pp.~2278--2324, 1998.
+
+\bibitem{holmes2022connecting}
+Z.~Holmes, K.~Sharma, M.~Cerezo, and P.~J.~Coles,
+``Connecting ansatz expressibility to gradient magnitudes and barren plateaus,''
+\emph{PRX Quantum}, vol.~3, no.~1, p.~010313, 2022.
+
+\bibitem{wang2021noise}
+S.~Wang, E.~Fontana, M.~Cerezo, K.~Sharma, A.~Sone, L.~Cincio, and P.~J.~Coles,
+``Noise-induced barren plateaus in variational quantum algorithms,''
+\emph{Nature Communications}, vol.~12, p.~6961, 2021.
+
+\bibitem{larocca2024review}
+M.~Larocca, S.~Thanasilp, S.~Wang, K.~Sharma, J.~Biamonte, P.~J.~Coles,
+L.~Cincio, J.~R.~McClean, Z.~Holmes, and M.~Cerezo,
+``A review of barren plateaus in variational quantum computing,''
+\emph{Nature Reviews Physics}, 2024. \href{https://doi.org/10.1038/s42254-024-00784-9}{doi:10.1038/s42254-024-00784-9}
+
+\bibitem{jerbi2023beyond}
+S.~Jerbi, L.~J.~Fiderer, H.~Poulsen~Nautrup, J.~M.~K\"ubler, H.~J.~Briegel,
+and V.~Dunjko,
+``Quantum machine learning beyond kernel methods,''
+\emph{Nature Communications}, vol.~14, p.~517, 2023.
 
 \end{thebibliography}
 
