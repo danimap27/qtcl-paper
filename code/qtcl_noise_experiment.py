@@ -50,8 +50,11 @@ import pennylane as qml
 RESULTS_DIR = Path(__file__).parent.parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
-IBM_BACKEND = "FakeBrisbane"
-N_SEEDS     = 2
+IBM_BACKEND   = "FakeBrisbane"
+N_SEEDS       = 2
+# Reduced for noise experiment (robustness analysis, not full benchmark)
+NOISE_EPOCHS  = 15   # vs 25 in main experiment
+NOISE_SAMPLES = 100  # train samples per task (vs 150)
 
 
 # ─── Extract real IBM error rates ────────────────────────────────────────────
@@ -223,7 +226,7 @@ def run_qtcl(model, tasks_tr, tasks_te, seed):
         Xr = torch.cat([X_tr] + reh_X) if reh_X else X_tr
         yr = torch.cat([y_tr] + reh_y) if reh_y else y_tr
 
-        train_task(model, Xr, yr, N_EPOCHS, ewc=ewc_obj)
+        train_task(model, Xr, yr, NOISE_EPOCHS, ewc=ewc_obj)
         ewc_obj.register(X_tr, y_tr, i)
 
         n_keep = max(4, int(REHEARSAL_RATIO * len(X_tr)))
@@ -246,7 +249,7 @@ def run_noise_experiment():
     sep = "=" * 60
     print(f"\n{sep}")
     print(f"QTCL Noise Experiment — {IBM_BACKEND} (default.mixed)")
-    print(f"Seeds: {N_SEEDS} | Tasks: {len(TASKS)}")
+    print(f"Seeds: {N_SEEDS} | Tasks: {len(TASKS)} | Epochs: {NOISE_EPOCHS} | Samples/task: {NOISE_SAMPLES}")
     print(sep)
 
     p1q, p2q, noise_info = extract_ibm_error_rates()
@@ -257,6 +260,8 @@ def run_noise_experiment():
     for s in range(N_SEEDS):
         print(f"\n── Seed {s} ──────────────────────────────")
         tasks_tr, tasks_te = load_split_mnist(seed=s * 37 + 5)
+        # Trim to NOISE_SAMPLES per task to speed up noise experiment
+        tasks_tr = [(X[:NOISE_SAMPLES], y[:NOISE_SAMPLES]) for X, y in tasks_tr]
 
         # Clean (lightning.qubit, adjoint)
         print("  [Clean — lightning.qubit]")
