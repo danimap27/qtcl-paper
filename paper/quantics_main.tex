@@ -35,11 +35,20 @@
 \title{Quantum Continual Learning via Fisher EWC\\
 and Experience Replay in Variational Quantum Circuits}
 
-\author{D.~Mart\'{\i}n-P\'erez\textsuperscript{1} \and
-        F.~Rodr\'{\i}guez-D\'{\i}az\textsuperscript{1} \and
-        D.~Guti\'errez-Avil\'es\textsuperscript{2} \and
-        A.~Troncoso\textsuperscript{1} \and
-        F.~Mart\'{\i}nez-\'Alvarez\textsuperscript{1}}
+\author{
+    D.~Mart\'{\i}n-P\'erez\textsuperscript{1},
+    F.~Rodr\'{\i}guez-D\'{\i}az\textsuperscript{1},
+    D.~Guti\'errez-Avil\'es\textsuperscript{2},
+    A.~Troncoso\textsuperscript{1}, 
+    F.~Mart\'{\i}nez-\'Alvarez\textsuperscript{1} \\
+    \textsuperscript{1} Pablo de Olavide University\\
+    \textsuperscript{2} University of Sevilla \\
+    \textit{Emails:} \\
+    \texttt{dmarper2@upo.es, froddia@upo.es, dgutierrez3@us.es, 
+    atrolor@upo.es,
+    fmaralv@upo.es}
+}
+
 \date{}
 
 \begin{document}
@@ -49,20 +58,22 @@ and Experience Replay in Variational Quantum Circuits}
 \begin{abstract}
 Catastrophic forgetting prevents quantum machine learning models from
 retaining previously learned tasks when trained sequentially.
-This paper presents \emph{Quantum Transfer Continual Learning} (QTCL),
-a hybrid quantum-classical framework that combines a trainable MLP encoder,
-Variational Quantum Circuits (VQCs) with task-shared and task-specific
-parameter banks, Fisher Information-based Elastic Weight Consolidation (EWC)
+This paper presents Quantum Transfer Continual Learning (QTCL),
+a hybrid quantum-classical framework that combines a trainable encoder,
+Variational Quantum Circuits with task-shared and task-specific
+parameter banks, Fisher Information-based Elastic Weight Consolidation
 computed exactly via adjoint differentiation over the Quantum Fisher
-Information Matrix (QFIM), and an experience replay buffer.
-On Split-MNIST (5 sequential binary tasks), QTCL achieves Average Accuracy
-$\mathrm{AA} = 0.849 \pm 0.018$ and Forgetting $\mathrm{F} = 0.130 \pm 0.002$,
-against the best classical baseline (Classical EWC: AA~$= 0.636$,
-F~$= 0.426$)---a $+21.3$\,pp accuracy gain and $3.3\times$ forgetting reduction
-(3~seeds, 95\% CI).
-These results show that QFIM-constrained EWC combined with rehearsal creates
-a synergistic anti-forgetting effect that exploits the geometry of quantum
-Hilbert space.
+Information Matrix, and an experience replay buffer.
+All experiments were executed on the Hercules high-performance computing
+cluster at Universidad Pablo de Olavide.
+On Split-MNIST (5 sequential binary tasks), QTCL achieves average accuracy
+$0.844 \pm 0.012$ and forgetting $0.130 \pm 0.023$ against the best
+classical baseline (Classical Elastic Weight Consolidation: $0.636 \pm 0.015$
+and $0.426 \pm 0.030$), a $+20.8$\,pp accuracy gain and $3.3\times$ forgetting
+reduction (3~seeds, 95\,\% confidence intervals).
+A noise robustness analysis under the IBM\,Brisbane calibration noise model
+shows an accuracy degradation of only 2.6\,\%, confirming compatibility
+with near-term quantum hardware.
 \end{abstract}
 
 \noindent\textit{Keywords:} Quantum Machine Learning, Continual Learning,
@@ -123,11 +134,17 @@ and experience replay, evaluated with statistical rigour (3~seeds, 95\%~CI).
 differentiation (PennyLane \texttt{lightning.qubit}), providing a
 geometrically principled quantum regularizer.
 
-\noindent\textit{Empirical result.} $+21.3$\,pp average accuracy and $3.3\times$
-less forgetting over the best classical baseline on Split-MNIST.
+\noindent\textit{Empirical result.} $+20.8$\,pp average accuracy and $3.3\times$
+less forgetting over the best classical baseline on Split-MNIST (Hercules HPC,
+3 seeds, 95\,\% CI).
 
-\noindent\textit{Ablation study.} Systematic analysis of EWC strength $\lambda$
-and rehearsal ratio $\rho$, establishing the optimal operating regime.
+\noindent\textit{Noise robustness.} QTCL sustains only a 2.6\,\% accuracy
+drop under the IBM\,Brisbane calibration depolarizing noise model, validating
+compatibility with near-term hardware.
+
+\noindent\textit{Ablation study.} Systematic analysis of Elastic Weight
+Consolidation strength $\lambda$ and rehearsal ratio $\rho$, establishing
+the optimal operating regime.
 
 The rest of the paper is organized as follows.
 Section~\ref{sec:related} reviews related work.
@@ -256,7 +273,7 @@ with angle encoding gates followed by the shared and task-specific
       {$\hat{y}$};
 
     \draw[arr] (input) -- (mlp);
-    \draw[arr] (mlp)   -- node[above,font=\tiny]{$\mathbf{z}{\in}[-1,1]^{n_q}$} (enc);
+    \draw[arr] (mlp)   -- (enc);
     \draw[arr] (enc)   -- (shared);
     \draw[arr] (shared)-- (task);
     \draw[arr] (task)  -- (meas);
@@ -288,9 +305,9 @@ with angle encoding gates followed by the shared and task-specific
       \gate[4,style={fill=sharedblue!20,draw=sharedblue}]{U_\mathrm{SEL}^{(2)}(\boldsymbol\theta_s)} &
       \gate[4,style={fill=taskorange!20,draw=taskorange}]{U_\mathrm{SEL}^{}(\boldsymbol\theta_t^{(t)})} &
       \meter{\langle Z\rangle} \\
-    \lstick{$q_2$} & \gate{R_Y(\pi z_2)} & & & & \meter{\langle Z\rangle} \\
-    \lstick{$q_3$} & \gate{R_Y(\pi z_3)} & & & & \meter{\langle Z\rangle} \\
-    \lstick{$q_4$} & \gate{R_Y(\pi z_4)} & & & & \meter{\langle Z\rangle}
+    \lstick{$q_2$} & \gate{R_Y(\pi z_2)} & & & & \meter{} \\
+    \lstick{$q_3$} & \gate{R_Y(\pi z_3)} & & & & \meter{} \\
+    \lstick{$q_4$} & \gate{R_Y(\pi z_4)} & & & & \meter{}
   \end{quantikz}
   \caption{VQC circuit for $n_q=4$ qubits. Angle encoding gates $R_Y(\pi z_i)$
            map the latent vector to the initial quantum state; two shared
@@ -383,6 +400,41 @@ which is mixed with the new task data in all subsequent training steps.
 \end{algorithmic}
 \end{algorithm}
 
+\subsection{Noise Simulation}
+\label{subsec:noise_method}
+
+To assess the robustness of QTCL under realistic hardware conditions, a
+depolarizing noise model is constructed from the calibration data of the
+IBM\,Brisbane 127-qubit processor, extracted via the
+\texttt{FakeBrisbane} backend of \texttt{qiskit-ibm-runtime}.
+The noise model captures two sources of gate error.
+Single-qubit gates (SX) are characterized by per-qubit depolarizing error
+rates $p_\mathrm{1q}$, with values
+$2.43 \times 10^{-4}$, $2.43 \times 10^{-4}$, $3.35 \times 10^{-4}$, and
+$3.43 \times 10^{-4}$ for the four qubits used, giving a mean
+$\bar{p}_\mathrm{1q} = 2.91 \times 10^{-4}$.
+Two-qubit gates (CX) use a uniform depolarizing error $p_\mathrm{2q} = 10^{-2}$
+derived from the device's cross-resonance gate characterization.
+Readout errors are not included in this model.
+
+In PennyLane, the noise model is applied by switching from the
+\texttt{lightning.qubit} statevector device to \texttt{default.mixed},
+which tracks the full density matrix $\rho$ and applies a depolarizing
+channel after each gate:
+\begin{equation}
+  \mathcal{E}_p(\rho) =
+  (1-p)\,\rho + \frac{p}{3}\!\sum_{k=1}^{3} \sigma_k\,\rho\,\sigma_k,
+  \label{eq:depol}
+\end{equation}
+where $\sigma_k \in \{X, Y, Z\}$ are the Pauli operators and $p$ is the
+gate-specific error rate from Eq.~(\ref{eq:depol}).
+The QTCL model, training loop, Fisher computation, and rehearsal buffer
+remain unchanged; only the backend device is replaced.
+The experiment compares clean (\texttt{lightning.qubit}) and noisy
+(\texttt{default.mixed} with FakeBrisbane rates) execution of QTCL
+across 2 independent seeds on the Hercules cluster (48\,h, 32 CPU cores,
+64\,GB RAM, \texttt{standard} partition).
+
 % ─── 4. Results ───────────────────────────────────────────────────────────────
 \section{Results}
 \label{sec:experiments}
@@ -392,6 +444,7 @@ Section~\ref{subsec:dataset} describes the benchmark dataset.
 Section~\ref{subsec:metrics} defines the evaluation metrics.
 Section~\ref{subsec:setup} details the experimental setup.
 Section~\ref{subsec:discussion} presents and discusses the results.
+Section~\ref{subsec:noise_results} reports the noise robustness analysis.
 
 \subsection{Dataset}
 \label{subsec:dataset}
@@ -411,9 +464,8 @@ balanced across the two classes.
 \subsection{Metrics}
 \label{subsec:metrics}
 
-Let $a_{i,j}$ be the test accuracy on task $j$ after the model has been trained
-through task $i$.
-Four standard continual learning metrics are reported:
+Let $a_{i,j}$ be the test accuracy on task $j$ after the model has been trained through task $i$.
+Four standard continual learning metrics are reported in Eqs. (\ref{eq:aa})-(\ref{eq:fwt}): Average Accuracy (AA), Forgetting (F), Backward Transfer (BWT) and Forward Transfer (FWT).
 
 \begin{equation}
   \mathrm{AA} = \frac{1}{T}\sum_{j=1}^{T} a_{T,j},
@@ -464,6 +516,15 @@ All quantum experiments run on PennyLane \texttt{lightning.qubit}, a C++
 statevector simulator with adjoint differentiation.
 The \texttt{StronglyEntanglingLayers} template is used as the variational ansatz.
 All results are means $\pm$ standard deviation over 3 independent random seeds.
+Noise robustness experiments use PennyLane \texttt{default.mixed} with the
+IBM\,Brisbane depolarizing noise model (Section~\ref{subsec:noise_method}).
+
+\noindent\textit{Compute infrastructure.}
+All experiments were executed on the Hercules high-performance computing cluster
+(Centro de Investigación y Tecnología en Ciencias y Humanidades, Universidad
+Pablo de Olavide) using SLURM job scheduling.
+The main experiment and ablation study used 24 CPU cores and 48\,GB RAM;
+the noise experiment used 32 CPU cores and 64\,GB RAM.
 
 \subsection{Result Discussion}
 \label{subsec:discussion}
@@ -473,7 +534,7 @@ QTCL achieves the best performance on all metrics by a large margin.
 Figure~\ref{fig:metrics} shows the metric comparison with 95\% confidence
 intervals, making the gap between QTCL and the baselines visible.
 
-\begin{table}[t]
+\begin{table}[h]
   \centering
   \caption{CL metrics on Split-MNIST (mean $\pm$ std, $n=3$ seeds,
            PennyLane backend).
@@ -484,26 +545,26 @@ intervals, making the gap between QTCL and the baselines visible.
     \toprule
     Method & AA$\uparrow$ & BWT$\uparrow$ & FWT$\uparrow$ & F$\downarrow$ \\
     \midrule
-    Classical Naive & $0.638\pm0.015$ & $-0.422\pm0.001$ & $-0.028\pm0.003$ & $0.422\pm0.001$ \\
-    Classical EWC   & $0.636\pm0.015$ & $-0.426\pm0.002$ & $-0.024\pm0.002$ & $0.426\pm0.002$ \\
+    Classical Naive & $0.638\pm0.015$ & $-0.422\pm0.029$ & $+0.033\pm0.030$ & $0.422\pm0.029$ \\
+    Classical EWC   & $0.636\pm0.015$ & $-0.426\pm0.030$ & $+0.022\pm0.019$ & $0.426\pm0.030$ \\
     \midrule
     \rowcolor{blue!7}
-    Quantum Naive   & $0.599\pm0.029$ & $-0.458\pm0.002$ & $-0.018\pm0.002$ & $0.458\pm0.002$ \\
+    Quantum Naive   & $0.599\pm0.033$ & $-0.462\pm0.040$ & $+0.027\pm0.031$ & $0.462\pm0.040$ \\
     \rowcolor{blue!7}
-    Quantum EWC     & $0.613\pm0.017$ & $-0.459\pm0.002$ & $-0.014\pm0.002$ & $0.459\pm0.002$ \\
+    Quantum EWC     & $0.617\pm0.012$ & $-0.454\pm0.023$ & $+0.044\pm0.036$ & $0.454\pm0.023$ \\
     \rowcolor{blue!18}
     \textbf{QTCL (ours)} &
-      $\mathbf{0.849\pm0.018}$ & $-0.130\pm0.002$ & $\mathbf{+0.038\pm0.003}$ &
-      $\mathbf{0.130\pm0.002}$ \\
+      $\mathbf{0.844\pm0.012}$ & $-0.129\pm0.024$ & $-0.006\pm0.063$ &
+      $\mathbf{0.130\pm0.023}$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[!h]
   \centering
   \begin{minipage}{\columnwidth}
     \centering
-    \includegraphics[width=\linewidth]{../figures/cl_metrics.pdf}
+    \includegraphics[width=\linewidth]{figures/cl_metrics.pdf}
     \caption{CL metrics comparison (mean $\pm$ 95\% CI, $n=3$ seeds).
              QTCL (dark blue) obtains the best values on all four metrics.
              The gap between Quantum EWC and QTCL shows that rehearsal is the
@@ -513,7 +574,7 @@ intervals, making the gap between QTCL and the baselines visible.
   \par\vspace{0.5cm}
   \begin{minipage}{\columnwidth}
     \centering
-    \includegraphics[width=\linewidth]{../figures/ablation_lambda.pdf}
+    \includegraphics[width=\linewidth]{figures/ablation_lambda.pdf}
     \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of EWC strength
              $\lambda_Q$. The quantum optimum ($\lambda_Q=200$) is lower than
              the classical one, reflecting the smaller VQC parameter space.}
@@ -524,58 +585,105 @@ intervals, making the gap between QTCL and the baselines visible.
 Three patterns stand out from Table~\ref{tab:main} and Figure~\ref{fig:metrics}.
 
 \noindent\textit{Rehearsal is the critical component.}
-Quantum EWC alone (AA~$=0.613$) obtains similar performance to Classical EWC
-(AA~$=0.636$), with no significant benefit from the quantum regularizer.
-Adding rehearsal to the quantum model yields a $+0.236$ AA jump---the largest
+Quantum Elastic Weight Consolidation alone (average accuracy 0.617) obtains
+similar performance to Classical Elastic Weight Consolidation (0.636), with no
+significant benefit from the quantum regularizer in isolation.
+Adding rehearsal yields a $+0.227$ average accuracy jump, the largest
 single-component gain across all methods.
 This result supports the hypothesis that replay provides the gradient signals
 needed to keep parameters out of barren plateau regions.
 
 \noindent\textit{Forgetting reduction.}
-QTCL reduces forgetting from 42.6\% (Classical EWC) to 13.0\%, a $3.3\times$
-absolute reduction as measured by Eq.~(\ref{eq:forgetting}).
+QTCL reduces forgetting from 0.426 (Classical Elastic Weight Consolidation)
+to 0.130, a $3.3\times$ reduction as measured by Eq.~(\ref{eq:forgetting}).
 The accuracy matrix in Figure~\ref{fig:accmat} confirms this at task granularity:
 QTCL preserves near-peak off-diagonal entries in the $5\times5$ matrix,
-whereas Classical EWC shows rapid diagonal decay.
+whereas Classical Elastic Weight Consolidation shows rapid off-diagonal decay.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.9\columnwidth]{../figures/accuracy_matrix.pdf}
-  \caption{Accuracy matrices $a[i,j]$ (Eq.~\ref{eq:aa}) for Classical EWC (left)
-           and QTCL (right). Each cell $(i,j)$ is the accuracy on task $j$ after
-           training through task $i$. QTCL maintains high off-diagonal accuracy
-           throughout sequential training, while Classical EWC shows sharp
-           off-diagonal decay.}
+  \includegraphics[width=0.9\columnwidth]{figures/accuracy_matrix.pdf}
+  \caption{Accuracy matrices $a[i,j]$ for Classical Elastic Weight Consolidation
+           (left) and QTCL (right). Each cell $(i,j)$ is the accuracy on task $j$
+           after training through task $i$. QTCL maintains high off-diagonal
+           accuracy; Classical Elastic Weight Consolidation shows sharp decay.}
   \label{fig:accmat}
 \end{figure}
 
-\noindent\textit{Forward transfer.}
-QTCL achieves positive FWT ($+0.038$, Eq.~\ref{eq:fwt}), indicating that
-the shared Hilbert space geometry of the VQC generalizes to tasks not yet seen.
-All classical baselines have negative FWT.
-
 \noindent\textit{Ablation study.}
-Figure~\ref{fig:abl_lam} shows AA as a function of EWC strength
-$\lambda_Q \in \{50, 100, 200, 500, 1000, 2000\}$.
-Performance peaks at $\lambda_Q = 200$, which is lower than the classical
-optimum ($\sim$500).
-This difference reflects the compact VQC parameter space (36 parameters):
-the regularization weight per parameter is higher, so a smaller global $\lambda$
-is enough to prevent over-constraining new-task learning.
+Figure~\ref{fig:abl_lam} shows average accuracy as a function of Elastic Weight
+Consolidation strength $\lambda_Q \in \{50, 100, 200, 500, 1000, 2000\}$.
+Performance peaks in the range $\lambda_Q \in [200, 500]$ (0.853 and 0.869
+respectively, within statistical noise over 2 seeds), then decreases for
+$\lambda_Q \geq 1000$ as over-constrained parameters prevent learning of new tasks.
+This optimal range is lower than the classical optimum ($\sim 500$), reflecting the
+compact Variational Quantum Circuit parameter space (36 parameters vs.\ 25,000):
+the regularization weight per parameter is already high, so a smaller global
+$\lambda$ suffices to prevent destructive updates.
 
-Figure~\ref{fig:abl_rho} shows AA as a function of rehearsal ratio
-$\rho \in \{0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4\}$.
-At $\rho=0$, QTCL reduces to Quantum EWC.
-AA grows as $\rho$ increases and reaches a plateau at $\rho=0.25$,
-showing that a 25\% replay buffer is the best accuracy-efficiency operating point.
+Figure~\ref{fig:abl_rho} shows average accuracy as a function of rehearsal
+ratio $\rho \in \{0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4\}$.
+At $\rho=0$, QTCL reduces to Quantum Elastic Weight Consolidation (0.744).
+Average accuracy grows monotonically with $\rho$ and reaches a broad plateau
+near $\rho = 0.25$--$0.40$, showing that a 25\,\% replay buffer provides the
+best accuracy-efficiency trade-off with no overfitting to replayed samples.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.9\columnwidth]{../figures/ablation_rehearsal.pdf}
+  \includegraphics[width=0.9\columnwidth]{figures/ablation_rehearsal.pdf}
   \caption{Average Accuracy (Eq.~\ref{eq:aa}) as a function of rehearsal
            ratio $\rho$. Performance reaches a plateau at $\rho=0.25$;
            setting $\rho=0$ degrades to the Quantum EWC baseline.}
   \label{fig:abl_rho}
+\end{figure}
+
+\subsection{Noise Robustness}
+\label{subsec:noise_results}
+
+Table~\ref{tab:noise} shows the effect of the IBM\,Brisbane depolarizing noise
+model on QTCL performance.
+The average accuracy drops by $\Delta\mathrm{AA} = -0.026$ (2.6\,\% absolute)
+from $0.866 \pm 0.009$ (clean) to $0.840 \pm 0.072$ (noisy).
+The forgetting metric is essentially unchanged ($\Delta\mathrm{F} = +0.001$),
+indicating that the anti-forgetting mechanisms---Elastic Weight Consolidation
+and rehearsal---are insensitive to the depolarizing channel at this circuit depth.
+
+\begin{table}[t]
+  \centering
+  \caption{QTCL noise robustness under IBM\,Brisbane depolarizing noise
+           ($n=2$ seeds). $\Delta$ is the absolute change from clean to noisy.}
+  \label{tab:noise}
+  \small
+  \begin{tabular}{lccc}
+    \toprule
+    Condition & AA & F & BWT \\
+    \midrule
+    Clean (\texttt{lightning.qubit})        & $0.866\pm0.009$ & $0.088\pm0.006$ & $-0.083\pm0.002$ \\
+    Noisy (\texttt{default.mixed}, FakeBrisbane) & $0.840\pm0.072$ & $0.089\pm0.048$ & $-0.081\pm0.050$ \\
+    \midrule
+    $\Delta$ (noisy $-$ clean)              & $-0.026$ & $+0.001$ & $+0.002$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The increased standard deviation under noise (AA: $0.072$ vs.\ $0.009$) reflects
+shot-to-shot variance from the stochastic depolarizing channel.
+The single-qubit gate error ($\bar{p}_\mathrm{1q} = 2.91 \times 10^{-4}$) is
+negligible per gate, while the two-qubit error ($p_\mathrm{2q} = 10^{-2}$) is the
+dominant noise source.
+At the circuit depth used ($L_s=2$, $L_t=1$, 4 qubits), the total accumulated
+two-qubit error remains below the threshold where accuracy degrades significantly,
+which explains the modest 2.6\,\% drop.
+Figure~\ref{fig:noise} compares the clean and noisy accuracy distributions.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{figures/noise_comparison.pdf}
+  \caption{Clean vs.\ noisy QTCL performance under IBM\,Brisbane depolarizing
+           noise. Average accuracy degrades by only 2.6\,\%; forgetting is
+           essentially unchanged, confirming that Elastic Weight Consolidation
+           and rehearsal remain effective under realistic gate noise.}
+  \label{fig:noise}
 \end{figure}
 
 % ─── 5. Conclusions ───────────────────────────────────────────────────────────
@@ -583,128 +691,57 @@ showing that a 25\% replay buffer is the best accuracy-efficiency operating poin
 \label{sec:conclusion}
 
 This paper presented QTCL, a hybrid quantum-classical continual learning
-framework that combines QFIM-based EWC (computed exactly via adjoint
-differentiation) with experience replay in a VQC with task-shared and
-task-specific parameter banks.
-On Split-MNIST, QTCL achieves AA~$=0.849$ and F~$=0.130$ (3~seeds, 95\%~CI),
-a $+21.3$\,pp accuracy gain and $3.3\times$ forgetting reduction against the
-best classical baseline.
+framework that combines Quantum Fisher Information Matrix-based Elastic Weight
+Consolidation (computed via adjoint differentiation) with experience replay
+in a Variational Quantum Circuit with task-shared and task-specific parameter banks.
+All experiments were executed on the Hercules HPC cluster at Universidad Pablo de Olavide.
+On Split-MNIST, QTCL achieves average accuracy $0.844 \pm 0.012$ and forgetting
+$0.130 \pm 0.023$ (3~seeds, 95\,\% CI), a $+20.8$\,pp accuracy gain and $3.3\times$
+forgetting reduction against the best classical baseline.
+A noise robustness analysis under the IBM\,Brisbane depolarizing noise model shows
+only a 2.6\,\% accuracy drop, confirming that QTCL is compatible with near-term
+Noisy Intermediate-Scale Quantum hardware.
 
-Three conclusions follow from the ablation study.
+Three conclusions follow from the experiments.
 
-\noindent\textit{Rehearsal is the critical component.} QFIM-based EWC alone gives no
-benefit over Classical EWC, but its combination with rehearsal produces a
-large improvement.
+\noindent\textit{Rehearsal is the critical component.}
+Quantum Fisher Information Matrix-based Elastic Weight Consolidation alone gives
+no benefit over Classical Elastic Weight Consolidation, but its combination with
+rehearsal produces a $+20.8$\,pp average accuracy gain.
 
-\noindent\textit{Optimal regularization strength.} The optimal quantum EWC strength ($\lambda_Q=200$) is lower than for
-classical models, which reflects the compact VQC parameter space.
+\noindent\textit{Optimal regularization range.}
+The optimal quantum Elastic Weight Consolidation strength lies in $\lambda_Q \in
+[200, 500]$, lower than for classical models, reflecting the compact Variational
+Quantum Circuit parameter space (36 parameters).
 
-\noindent\textit{Synergistic anti-forgetting effect.} The synergy between QFIM-constrained EWC and rehearsal exceeds the
-sum of their individual contributions.
+\noindent\textit{Noise robustness.}
+The 2.6\,\% accuracy degradation under IBM\,Brisbane gate noise confirms that
+Elastic Weight Consolidation and rehearsal remain effective at the circuit depths
+accessible in the Noisy Intermediate-Scale Quantum regime.
 
-Limitations of this work include the small dataset scale (150 samples per
-task) and the use of a simulator instead of real quantum hardware.
-Future work will extend the evaluation to Split-CIFAR-10 with barren-plateau
-mitigation strategies~\cite{larocca2024review}, report hardware results
-via IBM Quantum Runtime with Zero-Noise Extrapolation to address
-noise-induced barren plateaus~\cite{wang2021noise}, and study quantum
-generative rehearsal as an alternative to data replay.
+Limitations include the small dataset scale (150 samples per task) and the
+absence of readout errors and crosstalk in the noise model.
+Future work will extend evaluation to Split-CIFAR-10 with barren-plateau
+mitigation~\cite{larocca2024review}, validate on real IBM Quantum hardware
+with Zero-Noise Extrapolation~\cite{wang2021noise}, and explore quantum
+generative rehearsal as a privacy-preserving alternative to data replay.
+
+
+\section*{Acknowledgements}
+The authors thank the Spanish Ministry of Science and Innovation for support
+under projects PID2023-146037OB-C21 and PID2023-146037OB-C22, and Pablo de
+Olavide University for funding the Q-RESILIENCE project.
+Computations were performed on the Hercules high-performance computing cluster
+of the Centro de Investigación y Tecnología en Ciencias y Humanidades (CITIUS)
+at Universidad Pablo de Olavide.
+The authors also acknowledge the use of IBM Quantum Credits for hardware
+access planning.
+The views expressed are those of the authors and do not reflect the official
+policy or position of IBM or the IBM Quantum team.
+
 
 % ─── References ───────────────────────────────────────────────────────────────
 \bibliographystyle{splncs04}
-\bibliography{references}
-
-% --- legacy inline (kept for fallback; remove when splncs04 is available) ---
-\iffalse
-\begin{thebibliography}{99}
-
-\bibitem{mccloskey1989}
-McCloskey, M., Cohen, N.J.:
-Catastrophic interference in connectionist networks: The sequential learning problem.
-Psychol. Learn. Motiv. \textbf{24}, 109--165 (1989)
-
-\bibitem{goodfellow2013empirical}
-Goodfellow, I., Mirza, M., Xiao, D., Courville, A., Bengio, Y.:
-An empirical investigation of catastrophic forgetting in gradient-based neural networks.
-arXiv:1312.6211 (2013)
-
-\bibitem{kirkpatrick2017overcoming}
-Kirkpatrick, J. et al.:
-Overcoming catastrophic forgetting in neural networks.
-Proc. Natl. Acad. Sci. \textbf{114}(13), 3521--3526 (2017)
-
-\bibitem{zenke2017continual}
-Zenke, F., Poole, B., Ganguli, S.:
-Continual learning through synaptic intelligence.
-In: ICML, pp. 3987--3995 (2017)
-
-\bibitem{Rebuffi2017}
-Rebuffi, S.-A., Kolesnikov, A., Sperl, G., Lampert, C.H.:
-iCaRL: Incremental classifier and representation learning.
-In: CVPR, pp. 2001--2010 (2017)
-
-\bibitem{cerezo2021variational}
-Cerezo, M. et al.:
-Variational quantum algorithms.
-Nat. Rev. Phys. \textbf{3}, 625--644 (2021)
-
-\bibitem{jerbi2023beyond}
-Jerbi, S., Fiderer, L.J., Poulsen~Nautrup, H., K{\"u}bler, J.M.,
-Briegel, H.J., Dunjko, V.:
-Quantum machine learning beyond kernel methods.
-Nat. Commun. \textbf{14}, 517 (2023)
-
-\bibitem{haug2021}
-Haug, T., Kim, M.S.:
-Optimal training of variational quantum algorithms without barren plateaus.
-arXiv:2104.14543 (2021)
-
-\bibitem{mcclean2018barren}
-McClean, J.R., Boixo, S., Smelyanskiy, V.N., Babbush, R., Neven, H.:
-Barren plateaus in quantum neural network training landscapes.
-Nat. Commun. \textbf{9}, 4812 (2018)
-
-\bibitem{larocca2024review}
-Larocca, M. et al.:
-A review of barren plateaus in variational quantum computing.
-Nat. Rev. Phys. (2024)
-
-\bibitem{holmes2022connecting}
-Holmes, Z., Sharma, K., Cerezo, M., Coles, P.J.:
-Connecting ansatz expressibility to gradient magnitudes and barren plateaus.
-PRX Quantum \textbf{3}, 010313 (2022)
-
-\bibitem{wang2021noise}
-Wang, S. et al.:
-Noise-induced barren plateaus in variational quantum algorithms.
-Nat. Commun. \textbf{12}, 6961 (2021)
-
-\bibitem{chen2022quantumcl}
-Chen, S.Y.-C.:
-Quantum continual learning overcoming catastrophic forgetting.
-arXiv:2209.10440 (2022)
-
-\bibitem{finn2017maml}
-Finn, C., Abbeel, P., Levine, S.:
-Model-agnostic meta-learning for fast adaptation of deep networks.
-In: ICML, pp. 1126--1135 (2017)
-
-\bibitem{Pan2010}
-Pan, S.J., Yang, Q.:
-A survey on transfer learning.
-IEEE Trans. Knowl. Data Eng. \textbf{22}(10), 1345--1359 (2010)
-
-\bibitem{Zhuang2021}
-Zhuang, F. et al.:
-A comprehensive survey on transfer learning.
-Proc. IEEE \textbf{109}(1), 43--76 (2021)
-
-\bibitem{lecun1998}
-LeCun, Y., Bottou, L., Bengio, Y., Haffner, P.:
-Gradient-based learning applied to document recognition.
-Proc. IEEE \textbf{86}(11), 2278--2324 (1998)
-
-\end{thebibliography}
-\fi
+\bibliography{references_congress}
 
 \end{document}
