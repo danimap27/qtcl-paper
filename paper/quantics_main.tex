@@ -199,45 +199,26 @@ the VQC circuit structure.
     \node[blk=2.4cm, draw=encgreen, fill=encgreen!12, right=of input] (mlp)
       {\textbf{MLP Encoder} \scriptsize $784{\to}32{\to}n_q$};
 
-    \node[blk=1.5cm, draw=black!60, fill=yellow!15, right=of mlp] (enc)
-      {$R_Y(\pi z_i)$ \scriptsize angle enc.};
+    \node[blk=2.2cm, draw=qtclblue, fill=qtclblue!10, right=of mlp] (vqc)
+      {\textbf{VQC} \scriptsize $n_q{=}4$ qubits \\ \scriptsize (see Fig.~\ref{fig:circuit})};
 
-    \node[blk=1.9cm, draw=sharedblue, fill=sharedblue!12, right=of enc] (shared)
-      {$U_\mathrm{SEL}(\boldsymbol\theta_s)$ \scriptsize shared $L_s{=}2$};
-
-    \node[blk=1.9cm, draw=taskorange, fill=taskorange!12, right=of shared] (task)
-      {$U_\mathrm{SEL}(\boldsymbol\theta_t^{(t)})$ \scriptsize task $L_t{=}1$};
-
-    \node[blk=1.2cm, draw=measgray, fill=measgray!10, right=of task] (meas)
-      {$\langle Z_i\rangle$};
-
-    \node[blk=1.4cm, draw=black!60, fill=black!8, right=of meas] (cls)
+    \node[blk=1.4cm, draw=black!60, fill=black!8, right=of vqc] (cls)
       {\textbf{Linear} \scriptsize classifier};
 
     \node[blk=0.8cm, draw=black!40, fill=white, right=of cls] (out)
       {$\hat{y}$};
 
     \draw[arr] (input) -- (mlp);
-    \draw[arr] (mlp)   -- (enc);
-    \draw[arr] (enc)   -- (shared);
-    \draw[arr] (shared)-- (task);
-    \draw[arr] (task)  -- (meas);
-    \draw[arr] (meas)  -- (cls);
+    \draw[arr] (mlp)   -- (vqc);
+    \draw[arr] (vqc)   -- (cls);
     \draw[arr] (cls)   -- (out);
-
-    \begin{scope}[on background layer]
-      \node[draw=qtclblue, dashed, rounded corners=5pt, fill=qtclblue!5,
-            fit=(enc)(shared)(task)(meas),
-            label={[font=\footnotesize\color{qtclblue}]above:VQC ($n_q=4$ qubits)}]
-            {};
-    \end{scope}
   \end{tikzpicture}
   \caption{QTCL architecture. The MLP encoder (green) maps 784-dim inputs to a
-           $n_q$-dim latent space via a ReLU+LayerNorm hidden layer and a Tanh
-           output; $R_Y$ angle encoding embeds the latent vector into 4 qubits;
-           shared (blue) and task-specific (orange)
-           \texttt{StronglyEntanglingLayers} form the variational ansatz;
-           Pauli-$Z$ expectations feed a linear classifier.}
+           $n_q$-dim latent space; the VQC block (blue, detailed in
+           Fig.~\ref{fig:circuit}) encodes the latent vector into 4 qubits via
+           $R_Y$ angle encoding, applies shared and task-specific
+           \texttt{StronglyEntanglingLayers}, and outputs Pauli-$Z$ expectations
+           to a linear classifier.}
   \label{fig:arch}
 \end{figure}
 
