@@ -1,0 +1,15 @@
+{
+  "backend": "FakeBrisbane",
+  "source": "FakeBrisbane calibration data (real IBM hardware)",
+  "n_qubits_used": 4,
+  "p1q_sx_mean": 0.000291,
+  "p2q_cx_mean": 0.01,
+  "sx_per_qubit": [
+    0.000243,
+    0.000243,
+    0.000335,
+    0.000343
+  ],
+  "cx_per_pair": [],
+  "noise_model": "DepolarizingChannel (default.mixed)"
+}
