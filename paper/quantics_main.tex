@@ -347,7 +347,8 @@ confidence intervals.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.92\columnwidth]{figures/cl_metrics.pdf}
+  \includegraphics[width=\columnwidth,trim={0 0 638.75pt 0},clip]{figures/cl_metrics.pdf}\\[4pt]
+  \includegraphics[width=\columnwidth,trim={638.75pt 0 0 0},clip]{figures/cl_metrics.pdf}
   \caption{CL metrics (mean $\pm$ 95\,\% CI, $n=3$ seeds). QTCL achieves the
            best AA and F. FWT is best for Quantum EWC (+0.044); QTCL shows
            slightly negative FWT (--0.006), indicating that the combined EWC
@@ -374,9 +375,10 @@ whereas Classical EWC shows rapid off-diagonal decay after each task transition.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.92\columnwidth]{figures/accuracy_matrix.pdf}
+  \includegraphics[width=\columnwidth,trim={0 0 334.914pt 0},clip]{figures/accuracy_matrix.pdf}\\[4pt]
+  \includegraphics[width=\columnwidth,trim={334.914pt 0 0 0},clip]{figures/accuracy_matrix.pdf}
   \caption{Accuracy matrix $a[i,j]$ (accuracy on task $j$ after training
-           through task $i$) for Classical EWC (left) and QTCL (right).
+           through task $i$) for Classical EWC (top) and QTCL (bottom).
            QTCL maintains near-peak off-diagonal values, while Classical EWC
            shows rapid decay indicating catastrophic forgetting.}
   \label{fig:accmatrix}
