@@ -181,6 +181,16 @@ classifier.
 Default: $n_q=4$, $L_s=2$ shared layers, $L_t=1$ task layer (36 quantum
 parameters total).
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\columnwidth]{figures/architecture.pdf}
+  \caption{QTCL architecture. The MLP encoder maps 784-dim MNIST inputs to
+           a $n_q$-dim bounded latent vector, which is angle-encoded into the
+           VQC. The circuit applies a shared layer $U_\mathrm{SEL}(\boldsymbol\theta_s)$
+           followed by a task-specific layer $U_\mathrm{SEL}(\boldsymbol\theta_\mathrm{task}^{(t)})$.
+           Pauli-$Z$ expectations feed a linear classifier.}
+  \label{fig:arch}
+\end{figure}
 
 \subsection{Fisher EWC for Hybrid Models}
 \label{subsec:ewc}
@@ -358,9 +368,19 @@ to keep parameters out of barren plateau regions~\cite{mcclean2018barren}.
 
 \noindent\textit{Forgetting reduction.}
 QTCL reduces forgetting from 0.426 to 0.130, a $3.3\times$ reduction.
-Inspection of the $5\times5$ accuracy matrix $a[i,j]$ confirms that QTCL
-maintains near-peak off-diagonal entries throughout sequential training, whereas
-Classical EWC shows rapid off-diagonal decay after each task transition.
+Figure~\ref{fig:accmatrix} shows the $5\times5$ accuracy matrix $a[i,j]$:
+QTCL maintains near-peak off-diagonal entries throughout sequential training,
+whereas Classical EWC shows rapid off-diagonal decay after each task transition.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\columnwidth]{figures/accuracy_matrix.pdf}
+  \caption{Accuracy matrix $a[i,j]$ (accuracy on task $j$ after training
+           through task $i$) for Classical EWC (left) and QTCL (right).
+           QTCL maintains near-peak off-diagonal values, while Classical EWC
+           shows rapid decay indicating catastrophic forgetting.}
+  \label{fig:accmatrix}
+\end{figure}
 
 \noindent\textit{Forward transfer trade-off.}
 While all baselines achieve positive FWT (0.022--0.044), QTCL shows slightly
