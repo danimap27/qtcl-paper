@@ -1,6 +1,6 @@
 % ============================================================
 %  QTCL -- QUANTICS 2026 Conference Version (Springer CCIS)
-%  6-8 pages, LLNCS format
+%  20 pages max, LLNCS format
 %  Double-blind: author fields left EMPTY for submission.
 %  For camera-ready: fill \author and \institute below.
 % ============================================================
@@ -12,9 +12,21 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage{microtype}
 \usepackage{colortbl}
 \usepackage[numbers,sort&compress]{natbib}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds}
+\usepackage{quantikz}
+
+\definecolor{qtclblue}{RGB}{13,71,161}
+\definecolor{encgreen}{RGB}{46,125,50}
+\definecolor{sharedblue}{RGB}{21,101,192}
+\definecolor{taskorange}{RGB}{230,81,0}
+\definecolor{measgray}{RGB}{66,66,66}
+
 \title{Quantum Continual Learning via Fisher EWC\\
 and Experience Replay in Variational Quantum Circuits}
 
@@ -90,14 +102,24 @@ from parameter drift during sequential training hard.
 Second, highly expressive ansätze are more prone to barren
 plateaus~\cite{holmes2022connecting}, limiting practical circuit depth.
 
-This paper proposes QTCL, which combines QFIM-based EWC and experience replay
-to protect quantum parameters geometrically while preventing drift into barren
-plateau regions.
-Contributions: an end-to-end hybrid model with MLP encoder, VQC with
-task-shared and task-specific parameter banks evaluated over 3 seeds;
-a noise robustness analysis showing only 2.6\,\% accuracy drop under
-IBM\,Brisbane calibration data; and an ablation study connecting EWC
-strength and rehearsal ratio to barren plateau theory.
+This paper proposes QTCL, which addresses these problems by combining:
+(i) QFIM-based EWC to protect quantum parameters geometrically, and
+(ii) experience replay to provide gradient anchors preventing parameter drift
+into barren plateau regions.
+The contributions are as follows.
+
+\noindent\textit{QTCL framework.}
+An end-to-end hybrid model with MLP encoder, VQC with task-shared and
+task-specific parameter banks, QFIM-based EWC, and experience replay,
+evaluated with statistical rigour (3~seeds, 95\,\%~CI).
+
+\noindent\textit{Noise robustness.}
+QTCL sustains only a 2.6\,\% accuracy drop under the IBM\,Brisbane
+calibration depolarizing noise model, validating near-term hardware compatibility.
+
+\noindent\textit{Ablation study.}
+Systematic analysis of EWC strength $\lambda$ and rehearsal ratio $\rho$,
+connecting results to barren plateau theory.
 
 % ─── 2. Related Work ──────────────────────────────────────────────────────────
 \section{Related Work}
@@ -190,28 +212,54 @@ Classical (encoder) and quantum (VQC) parameters are treated uniformly with
 separate strengths $\lambda_C=500$ and $\lambda_Q=200$ to account for their
 different curvature scales ($p_Q=36$ vs.\ $p_C\approx25{,}000$ parameters).
 
-\subsection{Training Procedure}
+\subsection{Training Algorithm}
 \label{subsec:alg}
 
-Tasks are processed sequentially.
-After each task $t$, the diagonal FIM is computed on a calibration subset
-(Eq.~\ref{eq:fim}), the parameters are saved as the EWC reference point, and
-a reservoir sample~\cite{vitter1985random} of $\lfloor\rho|\mathcal{D}_t|\rfloor$
-past examples is added to the replay buffer $\mathcal{B}$.
-Subsequent tasks train on $\mathcal{D}_t\cup\mathcal{B}$ minimizing
-$\mathcal{L}_\mathrm{CE}+\mathcal{L}_\mathrm{EWC}$.
+Algorithm~\ref{alg:qtcl} describes the full QTCL procedure.
+After each task, the diagonal FIM is computed on a calibration subset,
+the parameters are saved as the EWC reference point, and a reservoir
+sample~\cite{vitter1985random} of past data is added to the replay buffer
+$\mathcal{B}$, which is mixed with new-task data in all subsequent steps.
+
+\begin{algorithm}[t]
+\caption{QTCL: Fisher EWC + Experience Replay}
+\label{alg:qtcl}
+\small
+\begin{algorithmic}[1]
+\Require Tasks $\{\mathcal{T}_i\}_{i=1}^T$; $\lambda_Q,\lambda_C$; ratio $\rho$; epochs $E$
+\State Init encoder $\phi$, shared $\boldsymbol\theta_s$,
+       task params $\boldsymbol\theta_\mathrm{task}^{(t)}$, classifier $W$;
+       $\mathcal{B}\!\leftarrow\!\emptyset$; $\hat{\mathbf{F}}\!\leftarrow\!\emptyset$
+\For{$t = 1$ to $T$}
+  \State Train on $\mathcal{D}_t\cup\mathcal{B}$ with $\mathcal{L}_\mathrm{CE}+\mathcal{L}_\mathrm{EWC}$ for $E$ epochs
+  \State Compute $\hat{\mathbf{F}}^{(t)}$ (Eq.~\ref{eq:fim}); save $\boldsymbol\theta^{*(t)}$
+  \State $\mathcal{B}\leftarrow\mathcal{B}\cup\mathrm{Reservoir}(\mathcal{D}_t,\lfloor\rho|\mathcal{D}_t|\rfloor)$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Noise Simulation}
 \label{subsec:noise_method}
 
-A depolarizing noise model is constructed from IBM\,Brisbane 127-qubit
-calibration data via \texttt{FakeBrisbane} (\texttt{qiskit-ibm-runtime}).
-Single-qubit gate (SX) error rate: $\bar{p}_\mathrm{1q}=2.91\times10^{-4}$;
-two-qubit gate (CX): $p_\mathrm{2q}=10^{-2}$; readout errors excluded.
+To assess noise robustness, a depolarizing noise model is constructed from the
+calibration data of the IBM\,Brisbane 127-qubit processor, extracted via the
+\texttt{FakeBrisbane} backend of \texttt{qiskit-ibm-runtime}.
+Single-qubit gates (SX) use per-qubit error rates
+$p_\mathrm{1q} \in \{2.43, 2.43, 3.35, 3.43\}\times10^{-4}$
+(mean $\bar{p}_\mathrm{1q}=2.91\times10^{-4}$); two-qubit gates (CX) use
+$p_\mathrm{2q}=10^{-2}$.
+Readout errors are not included.
 The model is applied in PennyLane by switching from \texttt{lightning.qubit}
-(statevector) to \texttt{default.mixed} (density matrix),
-inserting a depolarizing channel after each gate.
-The QTCL model and training loop remain unchanged.
+(statevector) to \texttt{default.mixed} (density matrix), which applies after
+each gate the depolarizing channel:
+\begin{equation}
+  \mathcal{E}_p(\rho) =
+  (1-p)\,\rho + \frac{p}{3}\!\sum_{k=1}^{3} \sigma_k\,\rho\,\sigma_k,
+  \label{eq:depol}
+\end{equation}
+where $\sigma_k\in\{X,Y,Z\}$ are the Pauli operators and $p\in\{p_\mathrm{1q},
+p_\mathrm{2q}\}$ is the gate-specific error rate.
+The QTCL model and training loop remain unchanged; only the backend is replaced.
 
 % ─── 4. Results ───────────────────────────────────────────────────────────────
 \section{Results}
@@ -299,16 +347,28 @@ confidence intervals.
   \label{fig:metrics}
 \end{figure}
 
-Rehearsal is the critical component: Quantum EWC alone (AA~$=0.617$) gives
-no benefit over Classical EWC (AA~$=0.636$), but adding replay yields a
-$+0.227$ AA gain, consistent with the hypothesis that replay provides gradient
-signals that keep parameters out of barren plateau
-regions~\cite{mcclean2018barren}.
-QTCL also reduces forgetting by $3.3\times$ (0.426~$\to$~0.130).
-All baselines show positive FWT (0.022--0.044), while QTCL shows slightly
-negative FWT ($-0.006\pm0.063$): the EWC and replay constraints stabilize
-shared parameters at the cost of reduced zero-shot plasticity---a trade-off
-that is beneficial overall given the $3.3\times$ backward protection.
+Three patterns stand out from Table~\ref{tab:main}.
+
+\noindent\textit{Rehearsal is the critical component.}
+Quantum EWC alone (AA~$=0.617$) gives no significant improvement over Classical
+EWC (AA~$=0.636$).
+Adding rehearsal yields a $+0.227$ AA jump, the largest single-component gain.
+This supports the hypothesis that replay provides the gradient signals needed
+to keep parameters out of barren plateau regions~\cite{mcclean2018barren}.
+
+\noindent\textit{Forgetting reduction.}
+QTCL reduces forgetting from 0.426 to 0.130, a $3.3\times$ reduction.
+Inspection of the $5\times5$ accuracy matrix $a[i,j]$ confirms that QTCL
+maintains near-peak off-diagonal entries throughout sequential training, whereas
+Classical EWC shows rapid off-diagonal decay after each task transition.
+
+\noindent\textit{Forward transfer trade-off.}
+While all baselines achieve positive FWT (0.022--0.044), QTCL shows slightly
+negative FWT ($-0.006 \pm 0.063$).
+The EWC and replay constraints stabilize shared parameters at the cost of
+reduced plasticity for zero-shot transfer to unseen tasks.
+This trade-off is beneficial overall: backward protection ($3.3\times$ forgetting
+reduction) outweighs the marginal loss of forward generalization.
 
 \subsection{Ablation Study}
 \label{subsec:ablation}
@@ -358,33 +418,55 @@ consistent with the two-seed ablation setting).
   \end{tabular}
 \end{table}
 
-Table~\ref{tab:noise} shows the noise results.
-QTCL achieves AA~$=0.840\pm0.072$ under Brisbane noise vs.\ $0.866\pm0.009$
-in clean simulation ($\Delta\mathrm{AA}=-0.026$, $-2.6\%$).
-Forgetting is unchanged ($\Delta\mathrm{F}=+0.001$), confirming that EWC and
-rehearsal remain effective under depolarizing noise.
-The higher std under noise (0.072 vs.\ 0.009) reflects shot-to-shot variance
-from the stochastic depolarizing channel~\cite{wang2021noise}.
-The minor AA difference between Table~\ref{tab:noise} (0.866) and
-Table~\ref{tab:main} (0.844) reflects seed variance with $n=2$.
+Table~\ref{tab:noise} shows the noise experiment results.
+QTCL achieves AA $= 0.840\pm0.072$ under the Brisbane noise model, compared
+to $0.866\pm0.009$ in clean simulation ($\Delta\mathrm{AA}=-0.026$, $-2.6\%$
+absolute).
+The higher clean AA in this experiment relative to Table~\ref{tab:main}
+(0.866 vs.\ 0.844) reflects seed variance with $n=2$ seeds.
+Forgetting is essentially unchanged ($\Delta\mathrm{F}=+0.001$), confirming
+that EWC and rehearsal remain effective under depolarizing noise.
+The dominant noise source is the two-qubit gate error ($p_\mathrm{2q}=10^{-2}$);
+at the circuit depth used ($L_s=2$, $L_t=1$, 4 qubits), the accumulated error
+remains below the threshold for significant accuracy degradation.
+The increased standard deviation under noise (0.072 vs.\ 0.009) reflects
+shot-to-shot variance from the stochastic depolarizing channel~\cite{wang2021noise}.
+Figure~\ref{fig:noise} confirms the results visually.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.88\columnwidth]{figures/noise_comparison.pdf}
+  \caption{Clean vs.\ noisy QTCL under IBM\,Brisbane depolarizing noise.
+           Average accuracy degrades by only 2.6\,\%; forgetting is unchanged,
+           confirming that EWC and rehearsal are robust to realistic gate noise.}
+  \label{fig:noise}
+\end{figure}
 
 % ─── 5. Conclusions ───────────────────────────────────────────────────────────
 \section{Conclusions}
 \label{sec:conclusion}
 
 This paper presented QTCL, a hybrid continual learning framework combining
-QFIM-based EWC with experience replay in a VQC with task-shared and
-task-specific parameter banks.
+QFIM-based EWC (via adjoint differentiation) with experience replay in a VQC
+with task-shared and task-specific parameter banks.
 On Split-MNIST (3~seeds, Hercules HPC), QTCL achieves AA~$=0.844\pm0.012$
 and F~$=0.130\pm0.023$, a $+20.8$\,pp accuracy gain and $3.3\times$ forgetting
 reduction over the best classical baseline.
-Rehearsal is the critical component: EWC alone gives no benefit over classical
-baselines, but their combination yields a $+0.227$ AA gain.
-Noise analysis shows only 2.6\,\% accuracy drop under IBM\,Brisbane calibration
-data, confirming NISQ compatibility.
-Limitations include the small dataset scale, the absence of readout errors in
-the noise model, and 2 seeds for noise experiments.
-Future work will extend to Split-CIFAR-10, validate on real IBM Quantum hardware
+Noise analysis under IBM\,Brisbane calibration data shows only a 2.6\,\% drop,
+confirming NISQ compatibility.
+
+Three findings follow.
+Rehearsal is the critical component: QFIM-based EWC alone gives no benefit
+over Classical EWC, but the combination yields a $+0.227$ AA gain.
+The optimal EWC range $\lambda_Q\in[200,500]$ is lower than for classical
+models, reflecting the compact VQC parameter space.
+The anti-forgetting constraints trade a small loss of forward transfer for
+$3.3\times$ better backward protection.
+
+Limitations include the small dataset scale (150 samples per task), the absence
+of readout errors in the noise model, and the use of 2 seeds for noise experiments.
+Future work will extend to Split-CIFAR-10 with barren-plateau
+mitigation~\cite{larocca2024review}, validate on real IBM Quantum hardware
 with Zero-Noise Extrapolation~\cite{wang2021noise}, and study quantum generative
 rehearsal as a privacy-preserving alternative to data replay.
 
