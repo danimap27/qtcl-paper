@@ -42,9 +42,10 @@ and Experience Replay in Variational Quantum Circuits}
 
 \institute{
     Pablo de Olavide University, Seville, Spain\\
-    \email{dmarper2@upo.es}
+    \email{dmarper2@upo.es}   \email{froddia@upo.es}   \email{atrolor@upo.es} \email{fmaralv@upo.es}
     \and
-    University of Seville, Seville, Spain
+    University of Seville, Seville, Spain\\
+    \email{dgutierrez3@us.es}
 }
 
 \begin{document}
@@ -102,7 +103,7 @@ from parameter drift during sequential training hard.
 Second, highly expressive ansätze are more prone to barren
 plateaus~\cite{holmes2022connecting}, limiting practical circuit depth.
 
-This paper proposes QTCL, which addresses these problems by combining:
+This paper proposes Quantum Transfer Continual Learning (QTCL), which addresses these problems by combining:
 (i) QFIM-based EWC to protect quantum parameters geometrically, and
 (ii) experience replay to provide gradient anchors preventing parameter drift
 into barren plateau regions.
@@ -125,32 +126,106 @@ connecting results to barren plateau theory.
 \section{Related Work}
 \label{sec:related}
 
-\noindent\textit{Continual learning.}
-Kirkpatrick et al.~\cite{kirkpatrick2017overcoming} introduced EWC, penalizing
-parameter changes weighted by the diagonal Fisher Information Matrix (FIM).
-Zenke et al.~\cite{zenke2017continual} proposed Synaptic Intelligence,
-accumulating parameter importance online.
-Rebuffi et al.~\cite{Rebuffi2017} introduced rehearsal-based iCaRL.
-Parisi et al.~\cite{parisi2019continual} survey the field comprehensively.
+\noindent\textit{Regularization-based continual learning.}
+Kirkpatrick et al.~\cite{kirkpatrick2017overcoming} introduced Elastic Weight
+Consolidation (EWC), penalizing parameter changes weighted by the diagonal
+Fisher Information Matrix (FIM) computed after each task.
+Zenke et al.~\cite{zenke2017continual} proposed Synaptic Intelligence (SI),
+accumulating parameter importance online during training rather than post-hoc.
+Schwarz et al.~\cite{schwarz2018progress} extended EWC with a Progress \& Compress
+framework: a knowledge base network consolidates knowledge via online EWC while
+a separate active column learns new tasks.
+Aljundi et al.~\cite{aljundi2018memory} proposed Memory Aware Synapses (MAS),
+estimating importance from the sensitivity of the output function rather than
+the loss, enabling unsupervised consolidation.
 
-\noindent\textit{Variational quantum circuits.}
-Cerezo et al.~\cite{cerezo2021variational} review variational quantum algorithms.
-The QFIM gives a natural Riemannian metric on quantum circuit parameter
-space~\cite{haug2021}.
-Holmes et al.~\cite{holmes2022connecting} connect ansatz expressibility to
-gradient magnitudes.
-McClean et al.~\cite{mcclean2018barren} characterize the barren plateau problem;
-Larocca et al.~\cite{larocca2024review} review mitigation strategies.
-Wang et al.~\cite{wang2021noise} show that hardware noise can induce barren
-plateaus independently of circuit depth.
+\noindent\textit{Architectural methods.}
+Rusu et al.~\cite{rusu2016progressive} introduced Progressive Neural Networks,
+which freeze learned columns and add lateral connections for each new task,
+eliminating forgetting at the cost of linear model growth.
+Serra et al.~\cite{serra2018overcoming} proposed Hard Attention to the Task
+(HAT), learning binary task-specific masks over hidden units, achieving near-zero
+forgetting while maintaining plasticity.
+Mallya and Lazebnik~\cite{mallya2018packnet} developed PackNet, which
+iteratively prunes and re-uses freed capacity within a fixed network size.
+These architectural methods prevent forgetting but require task identity at
+inference time, a constraint that regularization and replay methods avoid.
+
+\noindent\textit{Replay-based continual learning.}
+Rebuffi et al.~\cite{Rebuffi2017} introduced iCaRL, combining prototype
+selection with knowledge distillation for class-incremental learning.
+Lopez-Paz and Ranzato~\cite{lopezpaz2017gem} proposed Gradient Episodic Memory
+(GEM), constraining gradient updates so that loss on stored episodic memories
+does not increase, providing formal backward-transfer guarantees.
+Chaudhry et al.~\cite{chaudhry2019agem} showed that an averaged variant
+(A-GEM) achieves comparable performance with substantially lower cost.
+Buzzega et al.~\cite{buzzega2020dark} proposed Dark Experience Replay (DER++),
+storing soft logits alongside labels in the replay buffer for distillation,
+setting state-of-the-art on class-incremental benchmarks.
+Van de Ven and Tolias~\cite{vandeven2019three} clarified the taxonomy of
+continual learning into three scenarios (task-, domain-, and class-incremental),
+establishing that replay-based methods are particularly effective for the
+class-incremental case.
+Combining regularization and replay consistently outperforms either strategy
+alone~\cite{parisi2019continual}, motivating the joint EWC + rehearsal design
+of QTCL.
+
+\noindent\textit{Variational quantum circuits and quantum machine learning.}
+Biamonte et al.~\cite{biamonte2017quantum} surveyed quantum machine learning,
+identifying hybrid quantum-classical models as a practical path for NISQ devices.
+Benedetti et al.~\cite{benedetti2019parameterized} reviewed parameterized quantum
+circuits as machine learning models, establishing the framework widely adopted
+by VQC classifiers.
+Cerezo et al.~\cite{cerezo2021variational} survey variational quantum algorithms
+across optimization, simulation, and learning.
+Mitarai et al.~\cite{mitarai2018quantum} introduced the parameter-shift rule,
+enabling exact gradient computation for VQC parameters without finite differences.
+Stokes et al.~\cite{stokes2020quantum} derived the quantum natural gradient (QNG),
+which preconditions updates with the QFIM, achieving faster convergence on
+variational problems.
+The QFIM thus serves both as a Riemannian metric on quantum parameter
+space~\cite{haug2021} and as a principled importance weight, directly motivating
+the Fisher-weighted penalty in QTCL.
+Jerbi et al.~\cite{jerbi2023beyond} showed that VQCs can represent functions
+beyond the reach of kernel methods, arguing for their expressive advantage in
+learning tasks.
+
+\noindent\textit{Transfer learning in quantum models.}
+Mari et al.~\cite{mari2020transfer} demonstrated quantum transfer learning by
+pre-training a classical network and fine-tuning a shallow VQC on compressed
+features, achieving competitive accuracy with few quantum parameters.
+Havl{\'\i}{\v{c}}ek et al.~\cite{havlicek2019supervised} introduced quantum
+feature maps and kernel methods for supervised classification on near-term
+hardware.
+Both works motivate the hybrid MLP encoder in QTCL: the classical component
+compresses high-dimensional inputs into a quantum-compatible latent space,
+decoupling classical representation learning from quantum variational optimization.
+
+\noindent\textit{Barren plateaus.}
+McClean et al.~\cite{mcclean2018barren} showed that gradients of hardware-efficient
+ansätze vanish exponentially with qubit count and circuit depth.
+Holmes et al.~\cite{holmes2022connecting} linked expressibility to gradient
+magnitude, establishing that more expressive circuits are more susceptible to
+barren plateaus.
+Wang et al.~\cite{wang2021noise} demonstrated that hardware noise independently
+induces barren plateaus.
+Larocca et al.~\cite{larocca2024review} survey mitigation strategies, including
+layer-wise training, local cost functions, and structured ansätze.
+In the continual learning context, sequential parameter updates introduce a
+new barren-plateau risk: drift from a learned solution may push the circuit
+into flat loss regions, which experience replay counteracts by providing
+gradient anchors from past tasks.
 
 \noindent\textit{Quantum continual learning.}
-Chen~\cite{chen2022quantumcl} studied catastrophic forgetting in VQC classifiers
-and proposed quantum-adapted regularization.
-QTCL differs in three ways: it computes the FIM exactly via adjoint
-differentiation rather than approximating it, combines regularization with
-experience replay, and uses a hybrid encoder decoupling classical
-pre-processing from the quantum circuit.
+Chen~\cite{chen2022quantumcl} is, to our knowledge, the first systematic study
+of catastrophic forgetting in VQC classifiers, proposing quantum-adapted
+regularization penalties and evaluating them on binary classification.
+QTCL advances this line in three directions: (i) the FIM is computed exactly
+via adjoint differentiation rather than by finite-difference approximations;
+(ii) experience replay is combined with regularization, a combination not
+explored in~\cite{chen2022quantumcl}; and (iii) a hybrid encoder decouples
+high-dimensional preprocessing from the VQC, reducing required encoding depth
+and thus the barren-plateau risk in sequential training.
 
 % ─── 3. Methodology ───────────────────────────────────────────────────────────
 \section{Methodology}
@@ -165,7 +240,7 @@ A two-layer MLP maps raw 784-dim MNIST inputs to a bounded latent vector:
   \in [-1,+1]^{n_q},
 \]
 where Layer Normalization (LN) prevents encoder drift across tasks.
-The latent vector is encoded via $R_Y(\pi z_i)$ rotations and processed by:
+The latent vector is encoded via $R_Y(\pi z_i)$ rotations and processed by Eq.~(\ref{eq:ansatz}).
 \begin{equation}
   U_\mathrm{ans}(\boldsymbol\theta_s, \boldsymbol\theta_\mathrm{task}^{(t)}) =
   U_\mathrm{SEL}(\boldsymbol\theta_\mathrm{task}^{(t)})\,
@@ -247,7 +322,7 @@ the VQC circuit structure.
 \subsection{Fisher EWC for Hybrid Models}
 \label{subsec:ewc}
 
-The QTCL training loss for task $T$ is:
+The QTCL training loss for task $T$ is Eq.~(\ref{eq:ewc}).
 \begin{equation}
   \mathcal{L}_\mathrm{QTCL} = \mathcal{L}_\mathrm{CE} +
   \frac{\lambda}{2}\sum_{t<T}\sum_i
@@ -257,7 +332,7 @@ The QTCL training loss for task $T$ is:
 where $\mathcal{L}_\mathrm{CE}$ is cross-entropy, $\hat{F}_i^{(t)}$ is the
 estimated diagonal FIM for parameter $i$ after task $t$, and
 $\theta_i^{(t)*}$ is the optimal value of parameter $i$ after task $t$.
-The diagonal FIM is computed via per-sample backward passes:
+The diagonal FIM is computed via per-sample backward passes in Eq.~(\ref{eq:fim}).
 \begin{equation}
   \hat{F}_i^{(t)} = \frac{1}{N}\sum_{n=1}^{N}
   \!\left(\frac{\partial\log p(y_n|\mathbf{x}_n,\boldsymbol\theta)}
@@ -338,7 +413,7 @@ Each task uses 150 training and 80 test images (balanced).
 \noindent\textit{Metrics.}
 Let $a_{i,j}$ be test accuracy on task $j$ after training through task $i$.
 Average Accuracy (AA), Forgetting (F), Backward Transfer (BWT), and Forward
-Transfer (FWT) are defined as:
+Transfer (FWT) are defined in Eq.~(\ref{eq:aa_f}--\ref{eq:bwt_fwt}).
 \begin{align}
   \mathrm{AA}  &= \tfrac{1}{T}\textstyle\sum_j a_{T,j}, \quad
   \mathrm{F}   = \tfrac{1}{T-1}\textstyle\sum_{j<T}(\max_l a_{l,j}-a_{T,j}),
@@ -548,8 +623,7 @@ rehearsal as a privacy-preserving alternative to data replay.
 The authors thank the Spanish Ministry of Science and Innovation for support
 under projects PID2023-146037OB-C21 and PID2023-146037OB-C22, and Pablo de
 Olavide University for funding the Q-RESILIENCE project.
-Computations were performed on the Hercules HPC cluster (CITIUS,
-Universidad Pablo de Olavide).
+Computations were performed on the Hercules HPC cluster.
 The authors acknowledge the use of IBM Quantum Credits.
 The views expressed do not reflect the official policy or position of IBM.
 
